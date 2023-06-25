@@ -48,10 +48,11 @@ def _parse_ssb_content(html_content):
         opponent = element.find(string=re.compile("Opponent")).find_next('a').get_text(strip=True)
         date = element.find(string=re.compile("Date")).find_parent().find_next_sibling(text=True).strip()
         time = element.find(string=re.compile("Time")).find_parent().find_next_sibling(text=True).strip()
+        location = element.find(string=re.compile("Court")).find_parent().find_next_sibling(text=True).strip()
 
         game_details = f"{round}: {opponent}"
         game_date = datetime.strptime((f"{date} {time}"), "%d/%m/%Y %I:%M%p").strftime("%I:%M%p, %m/%d/%Y")
-        game_schedules.append({"round":game_details, "time":game_date})
+        game_schedules.append({"round":game_details, "time":game_date, "location":location})
 
     return game_schedules
 
