@@ -1,5 +1,6 @@
-# Local html scripts
+# Local html & json files
 *.html
+*.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
