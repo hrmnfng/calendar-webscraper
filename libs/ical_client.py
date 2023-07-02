@@ -7,15 +7,15 @@ from datetime import datetime
 
 class iCalClient:
     '''
-    This is a class for creating calendar events usingn iCal
+    This is a class for creating calendar events using iCal
 
     Attributes:
         name (str): Name of the class-object being created.
         calendar (Obj): Calendar object from iCal library.
 
     Methods:
-        add_event(XXX): XXX.
-        genereate_ical_data(XXX): XXX.
+        add_event(event_name:str, event_time:dateime, event_location:str): Adds an calendar event to the object.
+        genereate_ical_data(): Returns a iCal data string for all added calendar events.
     '''
     
     def __init__(self, name):

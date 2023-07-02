@@ -2,7 +2,7 @@
 Used parse different types of HTML pages and extractcing the relevant information.
 '''
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
 import re
 
@@ -51,11 +51,13 @@ def _parse_ssb_content(html_content):
         location = element.find(string=re.compile("Court")).find_parent().find_next_sibling(text=True).strip()
 
         game_details = f"{game_round}: {opponent}"
-        game_date = datetime.strptime((f"{date} {time}"), "%d/%m/%Y %I:%M%p")
+        game_start = datetime.strptime((f"{date} {time}"), "%d/%m/%Y %I:%M%p") 
+        game_end = game_start + timedelta(hours=1)
         game_schedules.append(
             {
                 "round":game_details, 
-                "time":game_date, 
+                "start":game_start,
+                "end":game_end,
                 "location":location
             }
         )
