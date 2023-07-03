@@ -1,0 +1,35 @@
+# This workflow will execute a specified python script in this repo
+
+name: Schedule to Calendar
+
+# Controls when the action will run:
+# 1. Runs on CRON job (every Monday morning at 6am)
+# 2. Runs when manually triggered using the UI or API
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+    # Inputs the workflow accepts.
+    inputs:
+      url:
+        # Friendly description to be shown in the UI instead of 'url'
+        description: 'SSB Team URL to scrape e.g. "https://sydneysocialbasketball.com.au/team/YOUR-TEAM-NAME/"'
+        # Default value if no value is explicitly provided
+        default: ''
+        # Input has to be provided for the workflow to run
+        required: false
+        # The data type of the input
+        type: string
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "run-script"
+  run-script:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    # Runs a single command using the runners shell
+    - name: Send greeting
+      run: echo "Hello ${{ inputs.name }}"
