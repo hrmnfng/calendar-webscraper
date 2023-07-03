@@ -47,4 +47,4 @@ jobs:
       
     - name: Run script
       run: |
-        python ./creat_gcal_events.py
+        python ./create_gcal_events.py
