@@ -47,5 +47,4 @@ jobs:
       
     - name: Run script
       run: |
-         echo "SCHEDULE_URL: $SCHEDULE_URL"
-         echo "RECIPIENTS: $RECIPIENTS"
+        python ./creat_gcal_events.py
