@@ -1,13 +1,12 @@
 from pprint import pprint
 import os
-from datetime import datetime
+import json
 
-from helpers.decorator import func_default_wrapper, func_timer
-from libs.scraper_client import ScraperClient, test_query
+from libs.scraper_client import ScraperClient
 from libs.google_cal_client import GoogleCalClient
 
-ATTENDEES = [{'email': ''}]
-URL = ""
+ATTENDEES = json.loads(os.environ['RECIPIENTS'])
+URL = os.environ['SCHEDULE_URL']
 
 # create the scraper client and scrape
 dummyScraper = ScraperClient("HTML Scraper", URL)
