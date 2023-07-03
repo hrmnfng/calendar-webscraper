@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SCHEDULE_URL: ${{ fromJSON(secrets.CONFIGURATION_SHAKE_SHAQ).schedule-url }}
-      RECIPIENTS: ${{ fromJSON(secrets.CONFIGURATION_SHAKE_SHAQ).recipients }}
+      RECIPIENTS: ${{ toJSON(fromJSON(secrets.CONFIGURATION_SHAKE_SHAQ).recipients) }}
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:  
