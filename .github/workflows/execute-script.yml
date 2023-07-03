@@ -28,6 +28,9 @@ jobs:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
     env:
+      GCAL_CLIENT_ID: ${{ secrets.GCAL_CLIENT_ID  }}
+      GCAL_CLIENT_SECRET: ${{ secrets.GCAL_CLIENT_SECRET  }}
+      GCAL_REFRESH_TOKEN: ${{ secrets.GCAL_REFRESH_TOKEN  }}
       SCHEDULE_URL: ${{ fromJSON(secrets.CONFIGURATION_SHAKE_SHAQ).schedule-url }}
       RECIPIENTS: ${{ toJSON(fromJSON(secrets.CONFIGURATION_SHAKE_SHAQ).recipients) }}
 
