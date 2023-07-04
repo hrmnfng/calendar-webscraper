@@ -114,13 +114,32 @@ class GoogleCalClient:
 
         return response.get('id')
     
-    def patch_event(self, event_id:str, updated_fields:dict, calendar_id:str='primary'):
+    
+    def update_event(self, event_id:str, updated_event:dict, calendar_id:str='primary'):
         '''
-        Updates specified fields in a Google Calendar event.
+        Updates  specified fields in a Google Calendar event.
 
         Args:
             event_id (str): ID of the event to be updated.
-            updated_fields (dict): Fields of the event to be updated.
+            updated_event (dict): a completed event with required fields already changed.
+            calendar_id (str): Calendar of the event being patched - default is "primary".
+
+        Returns:
+            Event ID for the updated event.
+        '''
+
+        repsonse = self.service.events().update(calendarId=calendar_id, eventId = event_id, body=updated_event).execute()
+
+        return repsonse.get('id')
+
+
+    def patch_event(self, event_id:str, patched_fields:dict, calendar_id:str='primary'):
+        '''
+        Patches (overwrites) provided fields in a Google Calendar event.
+
+        Args:
+            event_id (str): ID of the event to be patched.
+            patched_fields (dict): Fields of the event to be updated.
             calendar_id (str): Calendar of the event being patched - default is "primary".
 
         Returns:
@@ -128,15 +147,15 @@ class GoogleCalClient:
         '''
 
         # Fields to be updated
-        patch_event = updated_fields
+        patch_event = patched_fields
     
         '''
         e.g.
             {
-                'summary': 'My Event (Updated)',
+                'summary': 'My Event (Patched)',
                 'attendees': [
                     {'email': 'cal.endar.hlpr@gmail.com'},
-                    {'email': 'hermes.fng@gmail.com'}
+                    {'email': 'another.user@gmail.com'}
                 ]
             }
         '''
