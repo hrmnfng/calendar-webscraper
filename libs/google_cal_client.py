@@ -15,9 +15,9 @@ class GoogleCalClient:
 
     Attributes:
         name (str): Name of the class-object being created.
-        gcal_client_id (str): OS env variable passed it for authentication.
-        gcal_client_secret (str): OS env variable passed it for authentication.
-        gcal_refresh_token (str): OS env variable passed it for authentication.
+        gcal_client_id (str): OS env variable passed in for authentication.
+        gcal_client_secret (str): OS env variable passed in for authentication.
+        gcal_refresh_token (str): OS env variable passed in for authentication.
 
     Methods:
         create_event(event_name:str, start_time:str, end_time:str, attendees:list, location:str, private_properties:dict, calendar_id:str, visible_attendees:bool, time_zone:str): Creates an Google Calendar event.
