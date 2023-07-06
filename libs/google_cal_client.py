@@ -46,7 +46,7 @@ class GoogleCalClient:
                 self.creds.refresh(Request())
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(
-                    'credentials.json', SCOPES) #TODO This doesn't make sense in a GitHub actions world as the credentials.json file should never be available
+                    'credentials.json', SCOPES) #TODO Need to add some docs around how this is used
                 self.creds = flow.run_local_server(port=0)
             
             # Save the credentials as env variables for the next run
@@ -130,7 +130,7 @@ class GoogleCalClient:
 
         repsonse = self.service.events().update(calendarId=calendar_id, eventId = event_id, body=updated_event).execute()
 
-        return repsonse.get('id')
+        return repsonse
 
 
     def patch_event(self, event_id:str, patched_fields:dict, calendar_id:str='primary'):
