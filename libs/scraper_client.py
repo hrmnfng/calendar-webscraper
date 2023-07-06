@@ -2,11 +2,9 @@
 This client is used to scrape and parse a HTML page given the following information:
 '''
 
-import time
-
 import requests
 
-from helpers.html_parser import parse_html_content
+from helpers.html_parser import HTMLHelper
 
 class ScraperClient:
     '''
@@ -24,7 +22,7 @@ class ScraperClient:
     def __init__(self, name, url):
         self.name = name
         self.address = url
-        print(f"Created object with name '{name}' and address '{url}'")
+        print(f"Created scraper client object with name '{name}' and address '{url}'")
 
     def get_html(self):
         '''
@@ -53,10 +51,6 @@ class ScraperClient:
             A dictionariy containing the events
 
         '''
-        events_data = parse_html_content(html_content=html_content, parse_type=parse_type)
+        events_data = HTMLHelper.parse_html_content(html_content=html_content, parse_type=parse_type)
 
         return events_data
-
-def test_query():
-    time.sleep(5)
-    return "test over"
