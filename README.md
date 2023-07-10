@@ -1,4 +1,4 @@
-# calendar-webscraper
+# calendar-webscraper [![Schedule to Calendar](https://github.com/hrmnfng/calendar-webscraper/actions/workflows/execute-script.yml/badge.svg?branch=main)](https://github.com/hrmnfng/calendar-webscraper/actions/workflows/execute-script.yml)
 This is a glorified Python script that scrapes HTML web pages and then creates calendar events from them.
 
 There are clients that support both iCal and Google Calendar events, however the main implementation has been done with Google Calendar.
