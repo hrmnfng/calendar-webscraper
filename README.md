@@ -3,42 +3,51 @@ This is a glorified Python script that scrapes HTML web pages and then creates c
 
 There are clients that support both iCal and Google Calendar events, however the main implementation has been done with Google Calendar.
 
-This scripts runs automatically every Monday morning at 6am via GitHub actions. It can be also be manually triggered in the workflows page, or run locally.
+This scripts runs automatically every morning at 6am via a GitHub Action. It can be also be manually triggered in the workflows page, or run locally.
 
-## Adding the created calendars to your personal Calendar
+## Adding the created calendars to your personal calendar
 
-### Gmail
-Please use the Calendar ID provided by Google e.g.
-```
-https://calendar.google.com/calendar/embed?src=hr54c8jfpgc8kp5o9fqkdolu4c%40group.calendar.google.com&ctz=Australia%2FSydney
-```
-1. Open the link
-2. Click the `+` sign at the bottom right of screen to add the calendar to your Gmail account
-
-### Outlook and others
-Please use the .ics format for the calendar e.g.
-```
-https://calendar.google.com/calendar/ical/hr54c8jfpgc8kp5o9fqkdolu4c%40group.calendar.google.com/public/basic.ics
-```
-1. In Outlook, use the 'Add from internet' option
+Please see the [pinned issue](https://github.com/hrmnfng/calendar-webscraper/issues/13) in this GitHub repository for the links to the available calendars. This issue will be updated as necesssary whenever a new schedule is added.
 
 ## Running this script yourself
 Running this script yourself requires two components to be set:
 1. Environment Variables
 2. YAML Configuratoin files
 
-### Setting Environment Variables
+### Setting environment variables
 Before running this script, the following environment variables will need to be set:
 
 | Env Variable | Use |
 | --- | --- |
-| GCAL_CLIENT_ID | - |
-| GCAL_CLIENT_SECRET | - |
-| GCAL_REFRESH_TOKEN | - |
+| GCAL_CLIENT_ID | The unique identified assigned to an application/client that's attempting to access Google's APIs |
+| GCAL_CLIENT_SECRET | A confidential value associated with the client ID that is used for authentication,=, |
+| GCAL_REFRESH_TOKEN | A long-lived credential that allows the application to obtain new access tokens without user involvement |
 
-Requires credential.json
+<br>
+<details>
 
-### Setting the YAML Configration Files
+<summary>Instructions for generating the values for these environment variables locally</summary>
 
+1. Clone down this repository
+2. If you don't have one already, create a new project in the Google Cloud console (you may need to sign up)
+3. In that project, navigate to `APIs & Services` > `Credentials` in the left hand menu
+4. Generate a new `OAuth Client ID` by clicking on `CREATE CREDENTIALS` in the top bar
+    1. Set the Application Type to `Desktop app`
+    2. Set the name to whatever you'd like
+    3. Click `CREATE` button to proceed
+5. When the dialogue box confirming credential creation appears, click on the `DOWNLOAD.JSON`button at the bottom
+6. Rename this file to `credentials.json` and add it to the root directory of this repository
+7. Run `libs\google_cal_client.py` directly to generate your token credentials (you may uncomment out the print statemetns at the bottom for easier access)
+8. Once you have saved these values as the above environment variables, you are free to delete the `credentials.json` file
 
+</details>
+<br>
 
+Reminder that these environment variables are all sensitive credentials that can be used to grant access to Google account associated with the Googel Cloud console project. 
+
+### Setting up the YAML configration files
+This script uses YAML configuration files to determine which calendars to create and what events to populate them with.
+
+These files are stored in the `calendar-configs` folder in the root directory, and are read at runtime. There is a template file (`calendar-configs/_config_template.yaml`) that outlines what information the files should contain.
+
+Please note that even after these calendars are created, they need to be manually set to public and relevant URLs shared. Currently, there is no way to do this via Google's APIs.
