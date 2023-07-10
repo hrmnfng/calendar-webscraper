@@ -1,0 +1,7 @@
+# This is the template for the yaml config files
+# Please clone this template with the name "config-<YOUR_TEAM>.yaml" for each calendar that you wish to create
+# There should be one config per team/URL
+
+name: # The name of the calendar - this is used to uniquely identify each calendar, so please ensure that it is not already in use
+url: # The url from which this calendar is derived - it will also be include in the calendar description
+color_id: # The default color of the events used in the calendar.

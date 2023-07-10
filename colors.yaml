@@ -1,0 +1,146 @@
+"kind": "calendar#colors",
+"updated": "2012-02-14T00:00:00.000Z",
+"calendar": { 
+    "1": { 
+        "background": "#ac725e", # Brown
+        "foreground": "#1d1d1d" # Black
+    },
+    "2": {
+        "background": "#d06b64", # Red-Pink
+        "foreground": "#1d1d1d" # Black
+    },
+    "3": {
+        "background": "#f83a22", # Neon Red
+        "foreground": "#1d1d1d" # Black
+    },
+    "4": {
+        "background": "#fa573c", # Orange Red
+        "foreground": "#1d1d1d" # Black
+    },
+    "5": {
+        "background": "#ff7537", # Orange
+        "foreground": "#1d1d1d" # Black
+    },
+    "6": {
+        "background": "#ffad46", # Yellow-Gold
+        "foreground": "#1d1d1d" # Black
+    },
+    "7": {
+        "background": "#42d692", # Neon Sage
+        "foreground": "#1d1d1d" # Black
+    },
+    "8": {
+        "background": "#16a765", # Green
+        "foreground": "#1d1d1d" # Black
+    },
+    "9": {
+        "background": "#7bd148", # Nuclear Green
+        "foreground": "#1d1d1d" # Black
+    },
+    "10": {
+        "background": "#b3dc6c", # Lime
+        "foreground": "#1d1d1d" # Black
+    },
+    "11": {
+        "background": "#fbe983", # Mellow Banana
+        "foreground": "#1d1d1d" # Black
+    },
+    "12": {
+        "background": "#fad165", # Banana Yellow
+        "foreground": "#1d1d1d" # Black
+    },
+    "13": {
+        "background": "#92e1c0", # Cyan
+        "foreground": "#1d1d1d" # Black
+    },
+    "14": {
+        "background": "#9fe1e7", # Sky Blue
+        "foreground": "#1d1d1d" # Black
+    },
+    "15": {
+        "background": "#9fc6e7", # Pastel Blue
+        "foreground": "#1d1d1d" # Black
+    },
+    "16": {
+        "background": "#4986e7", # Blue
+        "foreground": "#1d1d1d" # Black
+    },
+    "17": {
+        "background": "#9a9cff", # Lilac
+        "foreground": "#1d1d1d" # Black
+    },
+    "18": {
+        "background": "#b99aff", # Soft Purple
+        "foreground": "#1d1d1d" # Black
+    },
+    "19": {
+        "background": "#c2c2c2", # Grey
+        "foreground": "#1d1d1d" # Black
+    },
+    "20": {
+        "background": "#cabdbf", # Ash Purple Grey
+        "foreground": "#1d1d1d" # Black
+    },
+    "21": {
+        "background": "#cca6ac", # Pastel Pink
+        "foreground": "#1d1d1d" # Black
+    },
+    "22": {
+        "background": "#f691b2", # Bubblegum Pink
+        "foreground": "#1d1d1d" # Black
+    },
+    "23": {
+        "background": "#cd74e6", # Bubblegum Purple
+        "foreground": "#1d1d1d" # Black
+    },
+    "24": {
+        "background": "#a47ae2", # Purple
+        "foreground": "#1d1d1d" # Black
+    }
+},
+"event": {
+    "1": {
+        "background": "#a4bdfc", # Pastel Blue
+        "foreground": "#1d1d1d" # Black
+    },
+    "2": {
+        "background": "#7ae7bf", # Turqoise
+        "foreground": "#1d1d1d" # Black
+    },
+    "3": {
+        "background": "#dbadff", # Light Violet
+        "foreground": "#1d1d1d" # Black
+    },
+    "4": {
+        "background": "#ff887c", # Pastel Red
+        "foreground": "#1d1d1d" # Black
+    },
+    "5": {
+        "background": "#fbd75b", # Pastel Yellow
+        "foreground": "#1d1d1d" # Black
+    },
+    "6": {
+        "background": "#ffb878", # Pastel Orange
+        "foreground": "#1d1d1d" # Black
+    },
+    "7": {
+        "background": "#46d6db", # Cyan
+        "foreground": "#1d1d1d" # Black
+    },
+    "8": {
+        "background": "#e1e1e1", # Grey
+        "foreground": "#1d1d1d" # Black
+    },
+    "9": {
+        "background": "#5484ed", # Blue
+        "foreground": "#1d1d1d" # Black
+    },
+    "10": {
+        "background": "#51b749", # Green
+        "foreground": "#1d1d1d" # Black
+    },
+    "11": {
+        "background": "#dc2127", # Red
+        "foreground": "#1d1d1d" # Black
+    }
+}
