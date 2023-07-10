@@ -3,11 +3,11 @@
 name: Schedule to Calendar
 
 # Controls when the action will run:
-# 1. Runs on CRON job (every Monday morning at 6am)
+# 1. Runs on CRON job (every morning at 6am)
 # 2. Runs when manually triggered using the UI or API
 on:
   schedule:
-    - cron: '0 6 * * 1'
+    - cron: '0 6 * * *'
   workflow_dispatch:
     # Inputs the workflow accepts.
     inputs:
