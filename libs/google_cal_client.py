@@ -279,6 +279,6 @@ if __name__ == "__main__":
     flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES) #TODO: Need to add some docs around how to get a credentials.json
     creds = flow.run_local_server(port=0)
 
-    print(f'Client ID: [{creds.client_id}]')
-    print(f'Client Secret: [{creds.client_secret}]')
-    print(f'Refresh Token: [{creds.refresh_token}]')
+    # print(f'Client ID: [{creds.client_id}]')
+    # print(f'Client Secret: [{creds.client_secret}]')
+    # print(f'Refresh Token: [{creds.refresh_token}]')
