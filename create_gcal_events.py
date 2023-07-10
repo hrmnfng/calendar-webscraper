@@ -202,17 +202,24 @@ GClient = GoogleCalClient('Cal.Endar', os.environ['GCAL_CLIENT_ID'], os.environ[
 config_dir = './calendar-configs'
 
 # read and iterate through config files
-for filename in os.listdir(config_dir):
-    if filename.startswith('config-') and filename.endswith('.yaml'):
-        file_path = os.path.join(config_dir, filename)
-        
-        # Read the YAML file
-        with open(file_path, 'r') as file:
-            config_data = yaml.safe_load(file)
-            print(f'\n*************************************************\n# Loaded [{file_path}] #')
-            try:
-                main_update_calenders(input_calendar_name=config_data['name'], input_url=config_data['url'], input_event_color_id=config_data['color_id'])
-            except Exception as e:
-                print(f'Something went wrong reading while attempting to read this file:\n{e}')
+try:
+    if len(os.listdir(config_dir)) == 0:
+        sys.exit('Please provide at least one config file in the "calendar-configs" folder')
+    else:    
+        for filename in os.listdir(config_dir):
+            if filename.startswith('config-') and filename.endswith('.yaml'):
+                file_path = os.path.join(config_dir, filename)
+                
+                # Read the YAML file
+                with open(file_path, 'r') as file:
+                    config_data = yaml.safe_load(file)
+                    print(f'\n*************************************************\n# Loaded [{file_path}] #')
+                    try:
+                        main_update_calenders(input_calendar_name=config_data['name'], input_url=config_data['url'], input_event_color_id=config_data['color_id'])
+                    except Exception as e:
+                        print(f'Something went wrong reading while attempting to read this file:\n{e}')
+                        
+except FileNotFoundError as e:
+    sys.exit('Please ensure that the "calendar-configs" folder has been created and populated in the root directory')
 
 print(IMPORTANT_STUFF_3)
