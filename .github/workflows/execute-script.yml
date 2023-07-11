@@ -15,7 +15,7 @@ on:
         required: false
         type: string
       team-url:
-        description: 'e.g. "https://sydneysocialbasketball.com.au/team/YOUR-TEAM-NAME/"'
+        description: 'Team URL'
         default: ''
         required: false
         type: string
