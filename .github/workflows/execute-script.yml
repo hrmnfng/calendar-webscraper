@@ -6,20 +6,26 @@ name: Schedule to Calendar
 # 1. Runs on CRON job (every morning at 6am)
 # 2. Runs when manually triggered using the UI or API
 on:
-  schedule:
-    - cron: '0 6 * * *'
   workflow_dispatch:
     # Inputs the workflow accepts.
     inputs:
-      url:
-        # Friendly description to be shown in the UI instead of 'url'
-        description: 'SSB Team URL to scrape e.g. "https://sydneysocialbasketball.com.au/team/YOUR-TEAM-NAME/"'
-        # Default value if no value is explicitly provided
+      calendar-name:
+        description: 'Name of the calendar'
         default: ''
-        # Input has to be provided for the workflow to run
         required: false
-        # The data type of the input
         type: string
+      team-url:
+        description: 'e.g. "https://sydneysocialbasketball.com.au/team/YOUR-TEAM-NAME/"'
+        default: ''
+        required: false
+        type: string
+      color-id:
+        description: 'Event color id'
+        default: ''
+        required: false
+        type: string
+  schedule:
+    - cron: '0 6 * * *'
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
