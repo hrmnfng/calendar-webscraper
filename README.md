@@ -29,7 +29,7 @@ Before running this script, the following environment variables will need to be 
 <summary>Instructions for generating the values for these environment variables locally</summary>
 
 1. Clone down this repository
-2. If you don't have one already, create a new project in the Google Cloud console (you may need to sign up)
+2. If you don't have one already, create a new project in the Google Cloud console (you may need to sign up - note that Refresh tokens for projects with "Publishing Status" set to `Testing` will expire in 7 days)
 3. In that project, navigate to `APIs & Services` > `Credentials` in the left hand menu
 4. Generate a new `OAuth Client ID` by clicking on `CREATE CREDENTIALS` in the top bar
     1. Set the Application Type to `Desktop app`
