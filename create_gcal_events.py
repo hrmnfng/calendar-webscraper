@@ -199,12 +199,12 @@ Executes from here onwards
 # create Scraper and Google Calender Clients
 htmlScraper = ScraperClient('Peter Parker')
 GClient = GoogleCalClient('Cal.Endar', os.environ['GCAL_CLIENT_ID'], os.environ['GCAL_CLIENT_SECRET'], os.environ['GCAL_REFRESH_TOKEN'])
-config_dir = './calendar-configs'
+config_dir = './gcalendar-configs'
 
 # read and iterate through config files
 try:
     if len(os.listdir(config_dir)) == 0:
-        sys.exit('Please provide at least one config file in the "calendar-configs" folder')
+        sys.exit('Please provide at least one config file in the "gcalendar-configs" folder')
     else:    
         for filename in os.listdir(config_dir):
             if filename.startswith('config-') and filename.endswith('.yaml'):
@@ -220,6 +220,6 @@ try:
                         print(f'Something went wrong reading while attempting to read this file:\n{e}')
                         
 except FileNotFoundError as e:
-    sys.exit('Please ensure that the "calendar-configs" folder has been created and populated in the root directory')
+    sys.exit('Please ensure that the "gcalendar-configs" folder has been created and populated in the root directory')
 
 print(IMPORTANT_STUFF_3)
