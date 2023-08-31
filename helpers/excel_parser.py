@@ -3,6 +3,7 @@ Used parse different Excel or CSV files given a input file and a data format.
 '''
 
 import pandas as pd
+from openpyxl import load_workbook
 from datetime import datetime 
 import sys
 from pprint import pprint
@@ -15,12 +16,29 @@ class ExcelHelper:
         if '.csv' in file_path:
             df = pd.read_csv(file_path)
         elif '.xlsx' in file_path:
-            df = pd.read_excel(file_path)
+            df = pd.read_excel(file_path, keep_default_na=False, na_values=[''])
+            
+            workbook = load_workbook(file_path, read_only=True)
+            sheet=workbook.active
+
+            for row_index, row in df.iterrows():
+                for col_index, cell_value in enumerate(row):
+                    cell = sheet.cell(row=row_index + 1, column=col_index + 1)
+                    if pd.isna(cell_value):
+                        df.iat[row_index, col_index] = ExcelHelper.get_merged_value(sheet, cell)
         
         return df
 
     @staticmethod
-    def extract_dates(raw_data):
+    def get_merged_value(sheet, cell):
+        if any(cell.coordinate in merged_range for merged_range in sheet.merged_cells):
+            for merged_range in sheet.merged_cells.ranges:
+                if cell.coordinate in merged_range:
+                    return merged_range.start_cell.value
+        return cell.value
+
+    @staticmethod
+    def extract_dates(raw_data, search_name):
         
         # identify how many columns there are / weeks there are:
         column_names = raw_data.columns.tolist()
@@ -40,8 +58,8 @@ class ExcelHelper:
         print(f'There are [{len(possible_days)}] dates in this spreadsheet')
         
         # identify which row to look at based on name
-        name_match = 'FU, Michele'
-        mask = raw_data['Select Name'].str.contains(name_match, case=False, na=False)
+        search_name
+        mask = raw_data['Select Name'].str.contains(search_name, case=False, na=False)
         indices_with_partial_match = raw_data.index[mask].tolist()
         if (len(indices_with_partial_match) > 0) and (len(indices_with_partial_match) > 1) :
             sys.exit('There is more than one match, please provide a more specific match-value')
@@ -115,12 +133,13 @@ class ExcelHelper:
                 print(f'You done screwed the pooch | value = [{raw_data.iloc[row, 1]}]; looking for [{event_type[i]}]')
 
         print('-----')
+        return schedule
 
 
 # row duplicate row names are done with .1, .2 ... at the end
     
 if __name__ == "__main__":
     raw_data = ExcelHelper.read_file('./Term-3-Intern-Resident-Rosters.xlsx')   
-    ExcelHelper.extract_dates(raw_data=raw_data)    
+    roster_schedule = ExcelHelper.extract_dates(raw_data=raw_data, search_name='FU, Michele')    
 
     pprint(raw_data)
