@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "9cf0dcf6cf2ae914ce027257278dd95b73dfae5975ee61338f84f30ebbaf1a14"
+            "sha256": "a58d80d83a1ba53af3366fe976c6550567269c649ee5954c639fa2f85e9e3ad8"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -164,15 +164,17 @@
                 "sha256:c286cf298426064079ed96a9e4a9d39e7f3e9bf15ba60701e95f5492f28415c7"
             ],
             "index": "pypi",
+            "markers": "python_version >= '3.7'",
             "version": "==4.0.10"
         },
         "gitpython": {
             "hashes": [
-                "sha256:8ce3bcf69adfdf7c7d503e78fd3b1c492af782d58893b650adb2ac8912ddd573",
-                "sha256:f04893614f6aa713a60cbbe1e6a97403ef633103cdd0ef5eb6efe0deb98dbe8d"
+                "sha256:5f4c4187de49616d710a77e98ddf17b4782060a1788df441846bddefbb89ab33",
+                "sha256:f9b9ddc0761c125d5780eab2d64be4873fc6817c2899cbcb34b02344bdc7bc54"
             ],
             "index": "pypi",
-            "version": "==3.1.31"
+            "markers": "python_version >= '3.7'",
+            "version": "==3.1.37"
         },
         "google-api-core": {
             "hashes": [
@@ -536,6 +538,7 @@
                 "sha256:c840e62059cd3be204b0c9c9f74be2c09d5648eddd4580d9314c3ecde0b30936"
             ],
             "index": "pypi",
+            "markers": "python_version >= '3.6'",
             "version": "==5.0.0"
         },
         "soupsieve": {
