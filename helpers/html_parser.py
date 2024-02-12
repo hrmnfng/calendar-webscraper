@@ -52,16 +52,18 @@ class HTMLHelper:
             date = element.find(string=re.compile("Date")).find_parent().find_next_sibling(text=True).strip()
             time = element.find(string=re.compile("Time")).find_parent().find_next_sibling(text=True).strip()
             location = element.find(string=re.compile("Court")).find_parent().find_next_sibling(text=True).strip()
+            details = element.find(string=re.compile("Score")).find_next('a', href=True).get("href")
 
             game_details = f"{game_round}: {opponent}"
             game_start = datetime.strptime((f"{date} {time}"), "%d/%m/%Y %I:%M%p") 
             game_end = game_start + timedelta(hours=1)
             game_schedules.append(
                 {
-                    "round":game_details, 
-                    "start":game_start,
-                    "end":game_end,
-                    "location":location
+                    "round": game_details, 
+                    "start": game_start,
+                    "end": game_end,
+                    "location": location,
+                    "details_url": details
                 }
             )
 
