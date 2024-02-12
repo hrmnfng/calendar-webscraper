@@ -147,7 +147,7 @@ class GoogleCalClient:
 
 
     def create_event(self, event_name:str, start_time:str, end_time:str, location:str, private_properties:dict,
-                     calendar_id:str='primary', visible_attendees:bool=False, time_zone:str='Australia/Sydney', color_id:int=1, attendees:list=[]):
+                     description:str="", calendar_id:str='primary', visible_attendees:bool=False, time_zone:str='Australia/Sydney', color_id:int=1, attendees:list=[]):
         '''
         Creates an Google Calendar event.
 
@@ -157,6 +157,7 @@ class GoogleCalClient:
             end_time (str): End time for the event in the above in "%Y-%m-%dT%H:%M:%S" format  e.g. "2023-07-02T10:30:00".
             location (str): Location of event.
             private_properties (dict): Dict of Key-value pairs for additional tagging.
+            description (str): Description of the event - can be used to provide additional details
             calendar_id (str): Calendar to add the event to - default is "primary".
             visibile_attendees (bool): Whether or not attendees are able to see other attendees in the event - default is False
             time_zone (str): Time zone for start and end times - default is "Australia/Sydney"

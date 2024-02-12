@@ -18,8 +18,9 @@ def get_game_details(game):
     tip_off = game['start'].strftime('%Y-%m-%dT%H:%M:%S')
     finish = game['end'].strftime('%Y-%m-%dT%H:%M:%S')     
     venue = game['location']
+    details_url = game['details_url']
 
-    return round_name, tip_off, finish, venue
+    return round_name, tip_off, finish, venue, details_url
 
 
 def get_events_by_schedule(existing_events_list, schedule_url):
@@ -40,22 +41,23 @@ def get_events_by_schedule(existing_events_list, schedule_url):
     return relevant_events
 
 
-def create_new_event(GClient, calendar_id:str, round_name:str, tip_off:str, finish:str, venue, url:str, color_id:str):
+def create_new_event(GClient, calendar_id:str, round_name:str, tip_off:str, finish:str, venue, url:str, color_id:str, description:str=""):
     '''
     Args:
         GClient (obj): Google Calendar client to execute scripts.
         round_name (str): Used for the event title.
         tip_off (str): Start time of the game.
-        finish (str): Finsih time of the game.
+        finish (str): Finish time of the game.
         venue (str): Venue of match.
         url (str): Schedule url.
         color_id (str): ID for the color of the event.
+        description (str): Description for the event - links to the score for the game.
 
     Returns:
         Private method for parsing differnt HTML pages.
     '''
     print(f'[{round_name}] is a new event - Creating calendar event:')
-    new_event = GClient.create_event(calendar_id=calendar_id,event_name=round_name, start_time=tip_off, end_time=finish, location=venue, private_properties={'schedule':url}, color_id=color_id)
+    new_event = GClient.create_event(calendar_id=calendar_id,event_name=round_name, start_time=tip_off, end_time=finish, location=venue, private_properties={'schedule':url}, color_id=color_id, description=description)
     print(f'\tEvent [{new_event}] created for [{round_name}]')
 
 
@@ -77,13 +79,14 @@ def simplify_existing_events(existing_events_list):
     return events_simple
 
 
-def generate_patch_details(round_name:str, tip_off:str, finish:str, color_id:str):
+def generate_patch_details(round_name:str, tip_off:str, finish:str, color_id:str, description:str=""):
     '''
     Args:
         round_name (str): The name of the round, updated just in case.
         tip_off (str): The new start time for the event.
         finish (str): The new end time for the event.
-        color_id (str): The color for the event
+        color_id (str): The color for the event.
+        description (str): A description for the event.
 
     Returns:
         Dict containing the patch details.
@@ -96,8 +99,11 @@ def generate_patch_details(round_name:str, tip_off:str, finish:str, color_id:str
                         'end': {
                             'dateTime': finish, 
                         },
-                        'colorId':color_id
+                        'colorId': color_id
                     }
+    
+    if description != "" :
+        patch_details.update({'description': description})
      
     return patch_details
 
@@ -149,17 +155,37 @@ def main_update_calenders(input_calendar_name:str, input_url:str, input_event_co
 
         for game in game_data: # looping through HTML data, not GCal data
             
-            round_name, tip_off, finish, venue = get_game_details(game)
+            round_name, tip_off, finish, venue, details_url = get_game_details(game)
 
             # OPTION 1: there is a perfect match for this event - Update other name/color if necessary
             if (tip_off in events_simple) and (events_simple[tip_off]['url'] == input_url):
-                print(f'[{round_name}] already has an existing event - Checking name/color/venue')
+                print(f'[{round_name}] already has an existing event - Checking details...')
 
-                # update name and color if necessary
+                # update name, color or description if necessary
+                # TODO: There's definitely a nicer way to do this
                 event_details = GClient.get_event_details(calendar_id=calendar_id, event_id=events_simple[tip_off]['id'])
-                if (event_details['colorId'] != str(input_event_color_id)) or (event_details['summary'] != round_name):
-                    mini_patch = GClient.patch_event(calendar_id=calendar_id, event_id=events_simple[tip_off]['id'], patched_fields={'summary': round_name, 'colorId': input_event_color_id, 'location': venue})
-                    print(f'\tPatched the name/color/location for event for [{round_name}] - id [{mini_patch}]')
+                
+                if event_details['summary'] != round_name:
+                    name_patch = GClient.patch_event(calendar_id=calendar_id, event_id=events_simple[tip_off]['id'], patched_fields={'summary': round_name})
+                    print(f'\tPatched the name for event for [{round_name}] - id [{name_patch}]')
+
+                if event_details['colorId'] != str(input_event_color_id):
+                    color_patch = GClient.patch_event(calendar_id=calendar_id, event_id=events_simple[tip_off]['id'], patched_fields={'colorId': input_event_color_id})
+                    print(f'\tPatched the color for event for [{round_name}] - id [{color_patch}]')
+
+                try:
+                    if event_details['description'] != details_url:
+                        descr_patch = GClient.patch_event(calendar_id=calendar_id, event_id=events_simple[tip_off]['id'], patched_fields={'description': details_url})
+                        print(f'\tPatched the description for event for [{round_name}] - id [{descr_patch}]')
+                except Exception as e:
+                    if e.args[0] == "description":
+                        print("\tNo description found - attempting a patch...")
+                        descr_patch = GClient.patch_event(calendar_id=calendar_id, event_id=events_simple[tip_off]['id'], patched_fields={'description': details_url})
+                        print(f'\tPatched the description for event for [{round_name}] - id [{descr_patch}]')
+
+                if event_details['location'] != venue:
+                    loc_patch = GClient.patch_event(calendar_id=calendar_id, event_id=events_simple[tip_off]['id'], patched_fields={'location': venue})
+                    print(f'\tPatched the location for event for [{round_name}] - id [{loc_patch}]')
 
             # OPTION 2: there is a partial match for game date but not time - patch
             elif any(tip_off[:-9] in date for date in events_simple.keys()):
@@ -174,7 +200,7 @@ def main_update_calenders(input_calendar_name:str, input_url:str, input_event_co
                     # if these events also belong to the same schedule/URL then update the round name & time
                     if events_simple[matched_date]['url'] == input_url:
                         print(f'[{round_name}] has an existing event with a different start time - Updating:')
-                        patch_details = generate_patch_details(round_name=round_name, tip_off=tip_off, finish=finish, color_id=input_event_color_id)
+                        patch_details = generate_patch_details(round_name=round_name, tip_off=tip_off, finish=finish, color_id=input_event_color_id, description=details_url)
                         p_id = events_simple[matched_date]['id']
                         patched_event = GClient.patch_event(calendar_id=calendar_id, event_id=p_id, patched_fields=patch_details)
 
@@ -184,11 +210,11 @@ def main_update_calenders(input_calendar_name:str, input_url:str, input_event_co
 
                 # OPTION 3A: otherwise all matches belong to a different schedule - insert
                 if not(same_schedule_found):
-                    create_new_event(GClient=GClient, calendar_id=calendar_id, round_name=round_name, tip_off=tip_off, finish=finish, venue=venue, url=input_url, color_id=input_event_color_id)
+                    create_new_event(GClient=GClient, calendar_id=calendar_id, round_name=round_name, tip_off=tip_off, finish=finish, venue=venue, url=input_url, color_id=input_event_color_id, description=details_url)
                 
             # OPTION 3B: there is no match at all - insert
             else:
-                create_new_event(GClient=GClient, calendar_id=calendar_id, round_name=round_name, tip_off=tip_off, finish=finish, venue=venue, url=input_url, color_id=input_event_color_id)
+                create_new_event(GClient=GClient, calendar_id=calendar_id, round_name=round_name, tip_off=tip_off, finish=finish, venue=venue, url=input_url, color_id=input_event_color_id, description=details_url)
 
     print('\n# Finished reading file')
 

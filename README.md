@@ -12,7 +12,12 @@ Please see the [pinned issue](https://github.com/hrmnfng/calendar-webscraper/iss
 ## Running this script yourself
 Running this script yourself requires two components to be set:
 1. Environment Variables
-2. YAML Configuratoin files
+2. YAML Configuration files
+
+You can then run the script via the following python command:
+```
+python3 create_gcal_events.py
+```
 
 ### Setting environment variables
 Before running this script, the following environment variables will need to be set:
