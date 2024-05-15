@@ -1,5 +1,6 @@
 import os, sys, yaml
 import pandas as pd
+import logging
 
 from helpers.ascii_strings import IMPORTANT_STUFF_1, IMPORTANT_STUFF_2, IMPORTANT_STUFF_3
 from libs.scraper_client import ScraperClient
@@ -146,7 +147,7 @@ def main_update_calenders(input_calendar_name:str, input_url:str, input_event_co
     if len(existing_schedule_events) == 0:
         
         for game in game_data:
-            round_name, tip_off, finish, venue = get_game_details(game)
+            round_name, tip_off, finish, venue, details_url = get_game_details(game)
             create_new_event(GClient=GClient, calendar_id=calendar_id, round_name=round_name, tip_off=tip_off, finish=finish, venue=venue, url=input_url, color_id=input_event_color_id)
 
     # the existing google calendar is not empty - check which are new/updated and add them
@@ -221,6 +222,7 @@ def main_update_calenders(input_calendar_name:str, input_url:str, input_event_co
 '''
 Executes from here onwards
 '''
+logger = logging.getLogger(__name__) # TODO: should actually used this :)
 
 # create Scraper and Google Calender Clients
 htmlScraper = ScraperClient('Peter Parker')
@@ -240,7 +242,7 @@ try:
                 with open(file_path, 'r') as file:
                     config_data = yaml.safe_load(file)
                     print(f'\n*************************************************\n# Loaded [{file_path}] #')
-                    try:
+                    try: # TODO: you also can't put the whole main function in a try catch block?????
                         main_update_calenders(input_calendar_name=config_data['name'], input_url=config_data['url'], input_event_color_id=config_data['color_id'])
                     except Exception as e:
                         print(f'Something went wrong reading while attempting to read this file:\n{e}')

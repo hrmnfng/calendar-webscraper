@@ -42,7 +42,7 @@ Before running this script, the following environment variables will need to be 
     3. Click `CREATE` button to proceed
 5. When the dialogue box confirming credential creation appears, click on the `DOWNLOAD.JSON`button at the bottom
 6. Rename this file to `credentials.json` and add it to the root directory of this repository
-7. Run `libs\google_cal_client.py` directly to generate your token credentials (you may uncomment out the print statemetns at the bottom for easier access)
+7. Run `libs\google_cal_client.py` directly to generate your token credentials (you may uncomment out the print statements at the bottom for easier access)
 8. Once you have saved these values as the above environment variables, you are free to delete the `credentials.json` file
 
 </details>
