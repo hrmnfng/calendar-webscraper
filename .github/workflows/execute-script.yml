@@ -47,12 +47,12 @@ jobs:
       run: |
         # Override with if inputs are provided
         if [[ "${{ inputs.log-level }}" != "" ]]; then
-          echo "LOG_LEVEL=${{ inputs.log-level }}" >> GITHUB_ENV
+          echo "LOG_LEVEL=${{ inputs.log-level }}" >> $GITHUB_ENV
         fi
 
         # Override if runner debug mode is enabled
         if [[ "${{ runner.debug }}" == "1" ]]; then
-          echo "LOG_LEVEL=DEBUG" >> GITHUB_ENV
+          echo "LOG_LEVEL=DEBUG" >> $GITHUB_ENV
         fi
     
     - name: Install pipenv
@@ -62,4 +62,5 @@ jobs:
       run: pipenv install
       
     - name: Run script
-      run: pipenv run ./create_gcal_events.py
+      run: |
+        pipenv run python create_gcal_events.py
