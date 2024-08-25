@@ -63,6 +63,4 @@ jobs:
       
     - name: Run script
       run: |
-        pwd
-        echo ""
-        pipenv run create_gcal_events.py
+        pipenv run python create_gcal_events.py
