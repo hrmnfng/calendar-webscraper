@@ -54,11 +54,12 @@ jobs:
         if [[ "${{ runner.debug }}" == "1" ]]; then
           echo "LOG_LEVEL=DEBUG" >> GITHUB_ENV
         fi
-      
+    
+    - name: Install pipenv
+      run: curl https://raw.githubusercontent.com/pypa/pipenv/master/get-pipenv.py | python
+    
     - name: Install packages
-      run: |
-        pipenv install
+      run: pipenv install
       
     - name: Run script
-      run: |
-        pipenv run ./create_gcal_events.py
+      run: pipenv run ./create_gcal_events.py
