@@ -5,10 +5,12 @@ Used parse different types of HTML pages and extracting the relevant information
 from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
 import re
+from loguru import logger
 
 class HTMLHelper:
 
     @staticmethod
+    @logger.catch
     def parse_html_content(html_content:str, parse_type:str, custom_parse:dict={}):
         '''
         Public method for parsing html content - will access private methods as required
@@ -27,9 +29,10 @@ class HTMLHelper:
             case "custom":
                 return HTMLHelper._parse_custom_content(html_content, custom_parse)
             case other:
-                print("Invalid type passed in")
+                logger.error("Invalid type passed in")
 
     @staticmethod
+    @logger.catch
     def _parse_ssb_content(html_content):
         '''
         Parse the SSB page for date-time events for each game.
@@ -41,6 +44,7 @@ class HTMLHelper:
             Dict containing the time and date for every upcoming game
 
         '''
+        logger.debug("Parsing SSB content")
         soup = BeautifulSoup(html_content, "html.parser")
         games = soup.find_all("div", class_="grid")
         game_schedules = []
@@ -70,6 +74,7 @@ class HTMLHelper:
         return game_schedules
 
     @staticmethod
+    @logger.catch
     def _parse_custom_content(html_content:str, custom_parse:dict):
         '''
         Parse the SSB page for date-time events for each game.
@@ -81,7 +86,8 @@ class HTMLHelper:
             Dict containing the time and date for every upcoming game
 
         '''
+        logger.debug("Parsing Custom content")
         soup = BeautifulSoup(html_content, "html.parser")
         
-        return print("This hasn't been setup yet")
+        return logger.warning("This hasn't been setup yet")
  

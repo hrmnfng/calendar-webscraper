@@ -9,36 +9,27 @@ on:
   workflow_dispatch:
     # Inputs the workflow accepts.
     inputs:
-      calendar-name:
-        description: 'Name of the calendar'
-        default: ''
-        required: false
-        type: string
-      team-url:
-        description: 'Team URL'
-        default: ''
-        required: false
-        type: string
-      color-id:
-        description: 'Event color id'
-        default: ''
-        required: false
-        type: string
+      log-level:
+        description: "Log level for action run"
+        default: 'INFO'
+        type: choice
+        options:
+          - MAJOR
+          - INFO
+          - DEBUG
+         
   schedule:
     - cron: '0 20 * * *' # Note that this is UTC time, which is our 6am equivalent in NSW, Australia
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "run-script"
   run-script:
-    # The type of runner that the job will run on
     runs-on: ubuntu-latest
     env:
       GCAL_CLIENT_ID: ${{ secrets.GCAL_CLIENT_ID  }}
       GCAL_CLIENT_SECRET: ${{ secrets.GCAL_CLIENT_SECRET  }}
       GCAL_REFRESH_TOKEN: ${{ secrets.GCAL_REFRESH_TOKEN  }}
+      LOG_LEVEL: INFO
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:  
     - name: Checkout repo
       uses: actions/checkout@v3
@@ -47,11 +38,23 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: "3.10.8"
+
+    - name: Set log level
+      run: |
+        # Override with if inputs are provided
+        if [[ "${{ inputs.log-level }}" != "" ]]; then
+          echo "LOG_LEVEL=${{ inputs.log-level }}" >> GITHUB_ENV
+        fi
+
+        # Override if runner debug mode is enabled
+        if [[ "${{ runner.debug }}" == "1" ]]; then
+          echo "LOG_LEVEL=DEBUG" >> GITHUB_ENV
+        fi
       
     - name: Install packages
       run: |
-        pip install -r ./requirements.txt
+        pipenv install
       
     - name: Run script
       run: |
-        python ./create_gcal_events.py
+        pipenv run ./create_gcal_events.py

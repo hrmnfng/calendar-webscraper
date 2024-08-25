@@ -4,7 +4,7 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
+from loguru import logger
 
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 
@@ -53,12 +53,9 @@ class GoogleCalClient:
             else:
                 sys.exit('Please generate a new refresh token using a "credentials.json" file and OAuth flow')
             
-
-
-
         self.service = build('calendar', 'v3', credentials=self.creds)
 
-        print(f"Created GCal client object with name '{name}'")
+        logger.debug(f"Created GCal client object with name '{name}'")
 
         # creds = Credentials.from_authorized_user_info(
         #     {
@@ -70,6 +67,7 @@ class GoogleCalClient:
         # )
 
 
+    @logger.catch
     def get_calendar_list(self):
         '''
         Retrieves a list of calendars belonging in the user's calendar list.
@@ -85,6 +83,7 @@ class GoogleCalClient:
         return calendar_list
     
 
+    @logger.catch
     def insert_calendar(self, calendar_name:str, description:str, time_zone:str='Australia/Sydney'):
         '''
         Creates a new calendar in the user's calendar list.
@@ -109,6 +108,7 @@ class GoogleCalClient:
         return created_calendar['id']
 
 
+    @logger.catch
     def patch_calendar(self, calendar_id:str, patched_fields:dict):
         '''
         Patches (overwrites) provided fields in a Google Calendar.
@@ -146,6 +146,7 @@ class GoogleCalClient:
         return repsonse.get('id')
 
 
+    @logger.catch
     def create_event(self, event_name:str, start_time:str, end_time:str, location:str, private_properties:dict,
                      description:str="", calendar_id:str='primary', visible_attendees:bool=False, time_zone:str='Australia/Sydney', color_id:int=1, attendees:list=[]):
         '''
@@ -193,6 +194,7 @@ class GoogleCalClient:
         return response.get('id')
     
     
+    @logger.catch
     def update_event(self, event_id:str, updated_event:dict, calendar_id:str='primary'):
         '''
         Updates a Google Calendar event.
@@ -211,6 +213,7 @@ class GoogleCalClient:
         return repsonse
 
 
+    @logger.catch
     def patch_event(self, event_id:str, patched_fields:dict, calendar_id:str='primary'):
         '''
         Patches (overwrites) provided fields in a Google Calendar event.
@@ -242,6 +245,7 @@ class GoogleCalClient:
         return repsonse.get('id')
 
 
+    @logger.catch
     def list_events(self, calendar_id:str='primary'):
         '''
         Retrieves a list of all events in a Google Calendar.
@@ -258,6 +262,7 @@ class GoogleCalClient:
         return events_list
     
 
+    @logger.catch
     def get_event_details(self, event_id:str, calendar_id:str='primary'):
         '''
         Retrives details for a specified Google Calendar event.
@@ -280,6 +285,6 @@ if __name__ == "__main__":
     flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES) #TODO: Need to add some docs around how to get a credentials.json
     creds = flow.run_local_server(port=0)
 
-    # print(f'Client ID: [{creds.client_id}]')
-    # print(f'Client Secret: [{creds.client_secret}]')
-    # print(f'Refresh Token: [{creds.refresh_token}]')
+    # logger.trace(f'Client ID: [{creds.client_id}]')
+    # logger.trace(f'Client Secret: [{creds.client_secret}]')
+    # logger.trace(f'Refresh Token: [{creds.refresh_token}]')

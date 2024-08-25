@@ -1,4 +1,5 @@
 # calendar-webscraper [![Schedule to Calendar](https://github.com/hrmnfng/calendar-webscraper/actions/workflows/execute-script.yml/badge.svg?branch=main)](https://github.com/hrmnfng/calendar-webscraper/actions/workflows/execute-script.yml)
+
 This is a glorified Python script that scrapes HTML web pages and then creates calendar events from them.
 
 There are clients that support both iCal and Google Calendar events, however the main implementation has been done with Google Calendar.
@@ -10,23 +11,32 @@ This scripts runs automatically every morning at 6am via GitHub Actions. It can 
 Please see the [pinned issue](https://github.com/hrmnfng/calendar-webscraper/issues/13) in this GitHub repository for the links to the available calendars. This issue will be updated as necesssary whenever a new schedule is added.
 
 ## Running this script yourself
+
 Running this script yourself requires two components to be set:
+
 1. Environment Variables
 2. YAML Configuration files
 
-You can then run the script via the following python command:
-```
-python3 create_gcal_events.py
+You can then run the script via the following python commands:
+
+```shell
+pipenv install -r ./requirements.txt
+
+pipenv run create_gcal_events.py
 ```
 
 ### Setting environment variables
+
 Before running this script, the following environment variables will need to be set:
 
-| Env Variable | Use |
-| --- | --- |
-| GCAL_CLIENT_ID | The unique identifier assigned to an application/client that's attempting to access Google's APIs |
-| GCAL_CLIENT_SECRET | A confidential value associated with the client ID that is used for authentication |
+| Env Variable       | Use                                                                                                      |
+| ------------------ | -------------------------------------------------------------------------------------------------------- |
+| GCAL_CLIENT_ID     | The unique identifier assigned to an application/client that's attempting to access Google's APIs        |
+| GCAL_CLIENT_SECRET | A confidential value associated with the client ID that is used for authentication                       |
 | GCAL_REFRESH_TOKEN | A long-lived credential that allows the application to obtain new access tokens without user involvement |
+| LOG_LEVEL          | The log level the application - default is "INFO"                                                        |
+
+### Local Setup
 
 <br>
 <details>
@@ -51,6 +61,7 @@ Before running this script, the following environment variables will need to be 
 Reminder that these environment variables are all sensitive credentials that can be used to grant access to Google account associated with the Google Cloud console project. 
 
 ### Setting up the YAML configration files
+
 This script uses YAML configuration files to determine which calendars to create and what events to populate them with.
 
 These files are stored in the `calendar-configs` folder in the root directory, and are read at runtime. There is a template file (`calendar-configs/_config_template.yaml`) that outlines what information the files should contain.

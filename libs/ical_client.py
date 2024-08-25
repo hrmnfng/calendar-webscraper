@@ -4,6 +4,7 @@ This client is used to generate iCal events based on a given a set of times and 
 
 from ics import Calendar, Event
 from datetime import datetime
+from loguru import logger
 
 class iCalClient:
     '''
@@ -21,7 +22,7 @@ class iCalClient:
     def __init__(self, name):
         self.name = name
         self.calendar = Calendar()
-        print(f"Created calendar object with name '{name}'")
+        logger.info(f"Created calendar object with name '{name}'")
 
     def add_event(self, event_name:str, event_time:datetime, event_location:str):
         '''
@@ -35,6 +36,7 @@ class iCalClient:
         Returns:
             Void - adds a calendar event to the object.
         '''
+        logger.debug(f"Creating event '{event.name}'")
 
         event = Event()
         event.name = event_name

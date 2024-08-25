@@ -1,12 +1,12 @@
 import os, sys, yaml
-import pandas as pd
-import logging
 
 from helpers.ascii_strings import IMPORTANT_STUFF_1, IMPORTANT_STUFF_2, IMPORTANT_STUFF_3
 from libs.scraper_client import ScraperClient
 from libs.google_cal_client import GoogleCalClient
+from loguru import logger
 
 
+@logger.catch
 def get_game_details(game):
     '''
     Args:
@@ -24,6 +24,7 @@ def get_game_details(game):
     return round_name, tip_off, finish, venue, details_url
 
 
+@logger.catch
 def get_events_by_schedule(existing_events_list, schedule_url):
     '''
     Args:
@@ -42,6 +43,7 @@ def get_events_by_schedule(existing_events_list, schedule_url):
     return relevant_events
 
 
+@logger.catch
 def create_new_event(GClient, calendar_id:str, round_name:str, tip_off:str, finish:str, venue, url:str, color_id:str, description:str=""):
     '''
     Args:
@@ -57,12 +59,13 @@ def create_new_event(GClient, calendar_id:str, round_name:str, tip_off:str, fini
     Returns:
         Private method for parsing differnt HTML pages.
     '''
-    print(f'[{round_name}] is a new event - Creating calendar event:')
+    logger.info(f'[{round_name}] is a new event - Creating calendar event:')
     new_event = GClient.create_event(calendar_id=calendar_id,event_name=round_name, start_time=tip_off, end_time=finish, location=venue, private_properties={'schedule':url}, color_id=color_id, description=description)
-    print(f'\tEvent [{new_event}] created for [{round_name}]')
+    logger.success(f'\tEvent [{new_event}] created for [{round_name}]')
 
 
-def simplify_existing_events(existing_events_list):
+@logger.catch
+def simplify_existing_events(existing_events_list:dict):
     '''
     Args:
         existing_events_list (dict): The value of ['items'] in the events list returned by the GoogleCalClient.list_events() function.
@@ -70,6 +73,7 @@ def simplify_existing_events(existing_events_list):
     Returns:
         Dict containining simplified list of start time, url and event id.
     '''
+    logger.debug(f"Simplifying event list of length '{len(existing_events_list)}'")
     events_simple = {}
 
     for event in existing_events_list:
@@ -80,6 +84,7 @@ def simplify_existing_events(existing_events_list):
     return events_simple
 
 
+@logger.catch
 def generate_patch_details(round_name:str, tip_off:str, finish:str, color_id:str, description:str=""):
     '''
     Args:
@@ -115,7 +120,7 @@ def main_update_calenders(input_calendar_name:str, input_url:str, input_event_co
     game_data = htmlScraper.scrape_events(html_content=html_content, parse_type='ssb')
 
     # PART 1: check if calendar exists, otherwise create one
-    print(IMPORTANT_STUFF_1)
+    logger.log("MAJOR", IMPORTANT_STUFF_1)
 
     calendar_id = ''
     calendar_exists = False
@@ -125,33 +130,32 @@ def main_update_calenders(input_calendar_name:str, input_url:str, input_event_co
     for calendar in calendar_list['items']:
         if calendar['summary'] == input_calendar_name:
             calendar_id = calendar['id']
-            print(f'Calendar [{input_calendar_name}] already exists with id [{calendar_id}]')
+            logger.info(f'Calendar [{input_calendar_name}] already exists with id [{calendar_id}]')
             calendar_exists = True
             break
 
     # create a new calendar if one does not already exist
     if not calendar_exists:
         descr = f'This calendar has been extracted from "{input_url}"'
-        print(f'Calendar [{input_calendar_name}] does not yet exist - Creating:')
+        logger.info(f'Calendar [{input_calendar_name}] does not yet exist - Creating:')
         calendar_id = GClient.insert_calendar(calendar_name=input_calendar_name, description=descr)
-        print(f' -> Calendar [{input_calendar_name}] created with id [{calendar_id}]')
+        logger.info(f' -> Calendar [{input_calendar_name}] created with id [{calendar_id}]')
 
     # PART 2: check game exists / time is accurate
-    print(IMPORTANT_STUFF_2)
+    logger.log("MAJOR", IMPORTANT_STUFF_2)
 
     #TODO: Analysis required to determine if there should be rework to not check schedule URL when matching events
     all_events = GClient.list_events(calendar_id=calendar_id) 
     existing_schedule_events = get_events_by_schedule(existing_events_list=all_events, schedule_url=input_url)
 
-    # the existing google calendar is empty - add all games
     if len(existing_schedule_events) == 0:
-        
+        logger.debug("Existing google calendar is empty - adding all games")
         for game in game_data:
             round_name, tip_off, finish, venue, details_url = get_game_details(game)
             create_new_event(GClient=GClient, calendar_id=calendar_id, round_name=round_name, tip_off=tip_off, finish=finish, venue=venue, url=input_url, color_id=input_event_color_id)
 
-    # the existing google calendar is not empty - check which are new/updated and add them
     else:
+        logger.debug("Existing google calendar is not empty - check which are new/updated and add them")
         events_simple = simplify_existing_events(existing_schedule_events)
 
         for game in game_data: # looping through HTML data, not GCal data
@@ -160,7 +164,7 @@ def main_update_calenders(input_calendar_name:str, input_url:str, input_event_co
 
             # OPTION 1: there is a perfect match for this event - Update other name/color if necessary
             if (tip_off in events_simple) and (events_simple[tip_off]['url'] == input_url):
-                print(f'[{round_name}] already has an existing event - Checking details...')
+                logger.info(f'[{round_name}] already has an existing event - Checking details...')
 
                 # update name, color or description if necessary
                 # TODO: There's definitely a nicer way to do this
@@ -168,25 +172,27 @@ def main_update_calenders(input_calendar_name:str, input_url:str, input_event_co
                 
                 if event_details['summary'] != round_name:
                     name_patch = GClient.patch_event(calendar_id=calendar_id, event_id=events_simple[tip_off]['id'], patched_fields={'summary': round_name})
-                    print(f'\tPatched the name for event for [{round_name}] - id [{name_patch}]')
+                    logger.info(f'\tPatched the name for event for [{round_name}] - id [{name_patch}]')
 
                 if event_details['colorId'] != str(input_event_color_id):
                     color_patch = GClient.patch_event(calendar_id=calendar_id, event_id=events_simple[tip_off]['id'], patched_fields={'colorId': input_event_color_id})
-                    print(f'\tPatched the color for event for [{round_name}] - id [{color_patch}]')
+                    logger.info(f'\tPatched the color for event for [{round_name}] - id [{color_patch}]')
 
                 try:
                     if event_details['description'] != details_url:
                         descr_patch = GClient.patch_event(calendar_id=calendar_id, event_id=events_simple[tip_off]['id'], patched_fields={'description': details_url})
-                        print(f'\tPatched the description for event for [{round_name}] - id [{descr_patch}]')
+                        logger.info(f'\tPatched the description for event for [{round_name}] - id [{descr_patch}]')
                 except Exception as e:
                     if e.args[0] == "description":
-                        print("\tNo description found - attempting a patch...")
+                        logger.info("\tNo description found - attempting a patch...")
                         descr_patch = GClient.patch_event(calendar_id=calendar_id, event_id=events_simple[tip_off]['id'], patched_fields={'description': details_url})
-                        print(f'\tPatched the description for event for [{round_name}] - id [{descr_patch}]')
+                        logger.info(f'\tPatched the description for event for [{round_name}] - id [{descr_patch}]')
 
                 if event_details['location'] != venue:
                     loc_patch = GClient.patch_event(calendar_id=calendar_id, event_id=events_simple[tip_off]['id'], patched_fields={'location': venue})
-                    print(f'\tPatched the location for event for [{round_name}] - id [{loc_patch}]')
+                    logger.info(f'\tPatched the location for event for [{round_name}] - id [{loc_patch}]')
+
+                logger.debug(f"[{round_name}] checked")
 
             # OPTION 2: there is a partial match for game date but not time - patch
             elif any(tip_off[:-9] in date for date in events_simple.keys()):
@@ -200,12 +206,12 @@ def main_update_calenders(input_calendar_name:str, input_url:str, input_event_co
 
                     # if these events also belong to the same schedule/URL then update the round name & time
                     if events_simple[matched_date]['url'] == input_url:
-                        print(f'[{round_name}] has an existing event with a different start time - Updating:')
+                        logger.info(f'[{round_name}] has an existing event with a different start time - Updating:')
                         patch_details = generate_patch_details(round_name=round_name, tip_off=tip_off, finish=finish, color_id=input_event_color_id, description=details_url)
                         p_id = events_simple[matched_date]['id']
                         patched_event = GClient.patch_event(calendar_id=calendar_id, event_id=p_id, patched_fields=patch_details)
 
-                        print(f'\tEvent for [{round_name}] patched with updated time [{tip_off}] - id [{patched_event}]')
+                        logger.info(f'\tEvent for [{round_name}] patched with updated time [{tip_off}] - id [{patched_event}]')
                         same_schedule_found = True
                         break
 
@@ -217,12 +223,30 @@ def main_update_calenders(input_calendar_name:str, input_url:str, input_event_co
             else:
                 create_new_event(GClient=GClient, calendar_id=calendar_id, round_name=round_name, tip_off=tip_off, finish=finish, venue=venue, url=input_url, color_id=input_event_color_id, description=details_url)
 
-    print('\n# Finished reading file')
+    logger.success(f"Finished reading file '{input_calendar_name}'")
+
 
 '''
 Executes from here onwards
 '''
-logger = logging.getLogger(__name__) # TODO: should actually used this :)
+# Set up loguru
+
+try:
+    log_level = os.environ['LOG_LEVEL']
+except:
+    log_level = "INFO"
+
+logger.remove()
+logger.add("logs/cal_run_{time}.log")
+MAJOR = logger.level("MAJOR", no=21, color="<yellow>")
+logger.add(
+    sink=sys.stderr,
+    format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{file}</cyan>:<cyan>{module}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>", 
+    level=log_level,
+    backtrace=True, 
+    diagnose=True
+)
+logger.info(f'Log Level: {log_level}')
 
 # create Scraper and Google Calender Clients
 htmlScraper = ScraperClient('Peter Parker')
@@ -241,13 +265,14 @@ try:
                 # Read the YAML file
                 with open(file_path, 'r') as file:
                     config_data = yaml.safe_load(file)
-                    print(f'\n*************************************************\n# Loaded [{file_path}] #')
-                    try: # TODO: you also can't put the whole main function in a try catch block?????
+                    logger.info(f'Loaded [{file_path}] #')
+                    try: 
                         main_update_calenders(input_calendar_name=config_data['name'], input_url=config_data['url'], input_event_color_id=config_data['color_id'])
                     except Exception as e:
-                        print(f'Something went wrong reading while attempting to read this file:\n{e}')
+                        logger.exception(f'Something went wrong reading while attempting to read this file:\n{e}')
                         
 except FileNotFoundError as e:
-    sys.exit('Please ensure that the "calendar-configs" folder has been created and populated in the root directory')
+    logger.execption(f'Please ensure that the "calendar-configs" folder has been created and populated in the root directory')
+    sys.exit()
 
-print(IMPORTANT_STUFF_3)
+logger.log("MAJOR", IMPORTANT_STUFF_3)
