@@ -1,4 +1,4 @@
-# calendar-webscraper [![Schedule to Calendar](https://github.com/hrmnfng/calendar-webscraper/actions/workflows/execute-script.yml/badge.svg?branch=main)](https://github.com/hrmnfng/calendar-webscraper/actions/workflows/execute-script.yml)
+# calendar-webscraper [![Schedule to Calendar](https://github.com/hrmnfng/calendar-webscraper/actions/workflows/execute-script.yml/badge.svg?branch=main)](https://github.com/hrmnfng/calendar-webscraper/actions/workflows/execute-script.yml?query=branch%3Amain)
 
 This is a glorified Python script that scrapes HTML web pages and then creates calendar events from them.
 
