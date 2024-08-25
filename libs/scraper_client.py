@@ -22,8 +22,7 @@ class ScraperClient:
     def __init__(self, name:str, default_timeout:int=30):
         self.name = name
         self.default_timeout = default_timeout
-        logger.info(f"Created scraper client object with name '{name}'")
-        logger.debug(f"Default timeout for '{name}' set to '{default_timeout}'")
+        logger.debug(f"Created scraper client object with name '{name}' with timeout set to '{default_timeout}'")
 
 
     @logger.catch

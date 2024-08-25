@@ -4,7 +4,7 @@ This is a glorified Python script that scrapes HTML web pages and then creates c
 
 There are clients that support both iCal and Google Calendar events, however the main implementation has been done with Google Calendar.
 
-This scripts runs automatically every morning at 6am via GitHub Actions. It can be also be manually triggered in the workflows page, or run locally.
+This script runs automatically every morning at 6am via GitHub Actions. It can be also be manually triggered in the workflows page, or run locally.
 
 ## Adding the created calendars to your personal calendar
 
@@ -40,7 +40,6 @@ Before running this script, the following environment variables will need to be 
 
 <br>
 <details>
-
 <summary>Instructions for generating the values for these environment variables locally</summary>
 
 1. Clone down this repository
@@ -58,7 +57,7 @@ Before running this script, the following environment variables will need to be 
 </details>
 <br>
 
-Reminder that these environment variables are all sensitive credentials that can be used to grant access to Google account associated with the Google Cloud console project. 
+Reminder that these environment variables are all sensitive credentials that can be used to grant access to Google account associated with the Google Cloud console project.
 
 ### Setting up the YAML configration files
 

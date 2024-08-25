@@ -114,7 +114,7 @@ def generate_patch_details(round_name:str, tip_off:str, finish:str, color_id:str
     return patch_details
 
 
-def main_update_calenders(input_calendar_name:str, input_url:str, input_event_color_id:str):
+def update_calenders(input_calendar_name:str, input_url:str, input_event_color_id:str):
     # scrape events
     html_content = htmlScraper.get_html(input_url)
     game_data = htmlScraper.scrape_events(html_content=html_content, parse_type='ssb')
@@ -265,9 +265,9 @@ try:
                 # Read the YAML file
                 with open(file_path, 'r') as file:
                     config_data = yaml.safe_load(file)
-                    logger.info(f'Loaded [{file_path}] #')
+                    logger.log("MAJOR", f'Loaded [{file_path}] #')
                     try: 
-                        main_update_calenders(input_calendar_name=config_data['name'], input_url=config_data['url'], input_event_color_id=config_data['color_id'])
+                        update_calenders(input_calendar_name=config_data['name'], input_url=config_data['url'], input_event_color_id=config_data['color_id'])
                     except Exception as e:
                         logger.exception(f'Something went wrong reading while attempting to read this file:\n{e}')
                         
