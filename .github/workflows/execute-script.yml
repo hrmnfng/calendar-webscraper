@@ -62,4 +62,7 @@ jobs:
       run: pipenv install
       
     - name: Run script
-      run: pipenv run ./create_gcal_events.py
+      run: |
+        pwd
+        echo ""
+        pipenv run create_gcal_events.py
