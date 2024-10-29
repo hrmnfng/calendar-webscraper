@@ -66,3 +66,4 @@ This script uses YAML configuration files to determine which calendars to create
 These files are stored in the `calendar-configs` folder in the root directory, and are read at runtime. There is a template file (`calendar-configs/_config_template.yaml`) that outlines what information the files should contain.
 
 Please note that even after these calendars are created, they need to be manually set to public and relevant URLs shared. Currently, there is no way to do this via Google's APIs.
+ 
