@@ -18,5 +18,6 @@ urllib3 = "==1.26.16"
 beautifulsoup4 = "==4.12.2"
 pipenv = "==2023.6.26"
 loguru = "==0.7.2"
+pyyaml = "*"
 
 [dev-packages]
