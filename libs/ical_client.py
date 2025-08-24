@@ -15,8 +15,8 @@ class iCalClient:
         calendar (Obj): Calendar object from iCal library.
 
     Methods:
-        add_event(event_name:str, event_time:dateime, event_location:str): Adds an calendar event to the object.
-        genereate_ical_data(): Returns a iCal data string for all added calendar events.
+        add_event(event_name:str, event_time:datetime, event_location:str): Adds an calendar event to the object.
+        generate_ical_data(): Returns a iCal data string for all added calendar events.
     '''
     
     def __init__(self, name):
