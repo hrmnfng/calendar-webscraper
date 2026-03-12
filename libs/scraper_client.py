@@ -1,62 +1,59 @@
-'''
-This client is used to scrape and parse a HTML page given the following information:
-'''
+"""
+HTTP client that fetches raw HTML and delegates parsing to HTMLHelper.
+"""
+
+from __future__ import annotations
 
 import requests
-
-from helpers.html_parser import HTMLHelper
 from loguru import logger
 
+from helpers.html_parser import HTMLHelper
+
+
 class ScraperClient:
-    '''
-    This is a class for scraping HTML content
+    """
+    Thin HTTP wrapper that fetches a URL and parses game schedules from the HTML.
 
     Attributes:
-        name (str): Name of the class-object being created.
+        name: Identifier for this client instance (used in log messages).
+        default_timeout: Request timeout in seconds.
+    """
 
-    Methods:
-        get_html(self, address:str): Retrives the raw HTML content from a given page.
-        scrape_events(self, html_content:str, parse_type:str): Scrape an html page and extract the relevant details.
-    '''
-    
-    def __init__(self, name:str, default_timeout:int=30):
+    def __init__(self, name: str, default_timeout: int = 30) -> None:
         self.name = name
         self.default_timeout = default_timeout
-        logger.debug(f"Created scraper client object with name '{name}' with timeout set to '{default_timeout}'")
+        logger.debug(f"Created scraper client '{name}' (timeout={default_timeout}s)")
 
-
-    @logger.catch
-    def get_html(self, address:str):
-        '''
-        Retrives the raw HTML content from a given page.
+    def get_html(self, address: str) -> str:
+        """
+        Fetch the raw HTML content from *address*.
 
         Args:
-            address (str): The url string for the html page being scraped.
+            address: URL to fetch.
 
         Returns:
-            The HTML content in string format
+            Response body as a string.
 
-        '''
-        logger.debug(f"Retrieving HTML content from '{address}'")
+        Raises:
+            requests.HTTPError: If the server returns a 4xx/5xx status.
+            requests.Timeout: If the request exceeds *default_timeout* seconds.
+        """
+        logger.debug(f"Fetching HTML from '{address}'")
         response = requests.get(address, timeout=self.default_timeout)
-        html_content = response.text
+        response.raise_for_status()
+        return response.text
 
-        return html_content
-
-
-    @logger.catch
-    def scrape_events(self, html_content:str, parse_type:str):
-        '''
-        Scrape an html page and extract the relevant details.
+    def scrape_events(self, html_content: str, parse_type: str) -> list[dict]:
+        """
+        Parse game schedule events out of *html_content*.
 
         Args:
-            url (str): The url string for the html page being scraped.
+            html_content: Raw HTML string previously fetched via :meth:`get_html`.
+            parse_type: Parsing strategy — see :meth:`HTMLHelper.parse_html_content`.
 
         Returns:
-            A dictionariy containing the events
-
-        '''
-        logger.debug(f"Attemping to scrape events using parse type '{parse_type}'")
-        events_data = HTMLHelper.parse_html_content(html_content=html_content, parse_type=parse_type)
-
-        return events_data
+            List of game dicts with keys ``round``, ``start``, ``end``,
+            ``location``, and ``details_url``.
+        """
+        logger.debug(f"Scraping events using parse type '{parse_type}'")
+        return HTMLHelper.parse_html_content(html_content=html_content, parse_type=parse_type)

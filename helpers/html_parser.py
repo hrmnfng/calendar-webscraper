@@ -1,93 +1,91 @@
-'''
-Used parse different types of HTML pages and extracting the relevant information.
-'''
+"""
+Parses different types of HTML pages and extracts structured game data.
+"""
 
-from datetime import datetime, timedelta
-from bs4 import BeautifulSoup
+from __future__ import annotations
+
 import re
+from datetime import datetime, timedelta
+
+from bs4 import BeautifulSoup
 from loguru import logger
+
 
 class HTMLHelper:
 
     @staticmethod
-    @logger.catch
-    def parse_html_content(html_content:str, parse_type:str, custom_parse:dict={}):
-        '''
-        Public method for parsing html content - will access private methods as required
+    def parse_html_content(
+        html_content: str,
+        parse_type: str,
+        custom_parse: dict | None = None,
+    ) -> list[dict]:
+        """
+        Route HTML content to the appropriate parser.
 
         Args:
-            html_content (str): The html content in string format that needs to be parsed.
-            type (str): The specific parse method.
-            custom_parse (dict): Optional param to speciy custom fields to parse.
+            html_content: Raw HTML string to parse.
+            parse_type: Selects the parsing strategy. Supported values:
+                ``"ssb"`` — Sydney Social Basketball pages.
+            custom_parse: Reserved for future custom parsing config.
 
         Returns:
-            Private method for parsing differnt HTML pages.
-        '''
+            List of game dicts, each containing ``round``, ``start``, ``end``,
+            ``location``, and ``details_url``.
+
+        Raises:
+            NotImplementedError: If *parse_type* is ``"custom"`` (not yet implemented).
+            ValueError: If an unknown *parse_type* is passed.
+        """
         match parse_type:
             case "ssb":
                 return HTMLHelper._parse_ssb_content(html_content)
             case "custom":
-                return HTMLHelper._parse_custom_content(html_content, custom_parse)
-            case other:
-                logger.error("Invalid type passed in")
+                raise NotImplementedError(
+                    "Custom parse type has not been implemented yet. "
+                    "Please use 'ssb' or contribute a custom parser."
+                )
+            case _:
+                raise ValueError(f"Unknown parse_type: {parse_type!r}")
 
     @staticmethod
-    @logger.catch
-    def _parse_ssb_content(html_content):
-        '''
-        Parse the SSB page for date-time events for each game.
+    def _parse_ssb_content(html_content: str) -> list[dict]:
+        """
+        Parse a Sydney Social Basketball (SSB) schedule page.
+
+        Expects one ``<div class="grid">`` per game, each containing labelled
+        fields for Round, Opponent, Date, Time, Court, and Score.
 
         Args:
-            html_content (str): The html content in string format that needs to be parsed.
+            html_content: Raw HTML string of an SSB team schedule page.
 
         Returns:
-            Dict containing the time and date for every upcoming game
-
-        '''
+            List of dicts with keys: ``round``, ``start`` (:class:`~datetime.datetime`),
+            ``end`` (:class:`~datetime.datetime`), ``location``, ``details_url``.
+        """
         logger.debug("Parsing SSB content")
         soup = BeautifulSoup(html_content, "html.parser")
         games = soup.find_all("div", class_="grid")
-        game_schedules = []
+        game_schedules: list[dict] = []
 
         for element in games:
-            #round = element.find("div", class_="cell").find("h5", text="Round").find_next_sibling(text=True).strip()
-            game_round = element.find(string=re.compile("Round")).find_parent().find_next_sibling(text=True).strip()
-            opponent = element.find(string=re.compile("Opponent")).find_next('a').get_text(strip=True)
-            date = element.find(string=re.compile("Date")).find_parent().find_next_sibling(text=True).strip()
-            time = element.find(string=re.compile("Time")).find_parent().find_next_sibling(text=True).strip()
-            location = element.find(string=re.compile("Court")).find_parent().find_next_sibling(text=True).strip()
-            details = element.find(string=re.compile("Score")).find_next('a', href=True).get("href")
+            game_round = element.find(string=re.compile("Round")).find_parent().find_next_sibling(string=True).strip()
+            opponent = element.find(string=re.compile("Opponent")).find_next("a").get_text(strip=True)
+            date = element.find(string=re.compile("Date")).find_parent().find_next_sibling(string=True).strip()
+            time = element.find(string=re.compile("Time")).find_parent().find_next_sibling(string=True).strip()
+            location = element.find(string=re.compile("Court")).find_parent().find_next_sibling(string=True).strip()
+            details = element.find(string=re.compile("Score")).find_next("a", href=True).get("href")
 
-            game_details = f"{game_round}: {opponent}"
-            game_start = datetime.strptime((f"{date} {time}"), "%d/%m/%Y %I:%M%p") 
+            game_start = datetime.strptime(f"{date} {time}", "%d/%m/%Y %I:%M%p")
             game_end = game_start + timedelta(hours=1)
+
             game_schedules.append(
                 {
-                    "round": game_details, 
+                    "round": f"{game_round}: {opponent}",
                     "start": game_start,
                     "end": game_end,
                     "location": location,
-                    "details_url": details
+                    "details_url": details,
                 }
             )
 
         return game_schedules
-
-    @staticmethod
-    @logger.catch
-    def _parse_custom_content(html_content:str, custom_parse:dict):
-        '''
-        Parse the SSB page for date-time events for each game.
-
-        Args:
-            html_content (str): The html content in string format that needs to be parsed.
-
-        Returns:
-            Dict containing the time and date for every upcoming game
-
-        '''
-        logger.debug("Parsing Custom content")
-        soup = BeautifulSoup(html_content, "html.parser")
-        
-        return logger.warning("This hasn't been setup yet")
- 

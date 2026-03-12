@@ -188,7 +188,10 @@ class GoogleCalClient:
             'guestsCanSeeOtherGuests': visible_attendees,
             'colorId':color_id # see colors.json for options
         }
-        
+
+        if description:
+            new_event['description'] = description
+
         response = self.service.events().insert(calendarId=calendar_id, body=new_event).execute()
 
         return response.get('id')

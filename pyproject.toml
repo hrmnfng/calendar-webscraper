@@ -1,0 +1,45 @@
+[project]
+name = "calendar-webscraper"
+version = "1.0.0"
+description = "Scrapes basketball schedules and syncs them to Google Calendar"
+requires-python = ">=3.10"
+dependencies = [
+    "google-api-core==2.11.1",
+    "google-api-python-client==2.90.0",
+    "google-auth==2.20.0",
+    "google-auth-httplib2==0.1.0",
+    "google-auth-oauthlib==1.0.0",
+    "googleapis-common-protos==1.59.1",
+    "httplib2==0.22.0",
+    "requests==2.31.0",
+    "urllib3==1.26.16",
+    "beautifulsoup4==4.12.2",
+    "loguru==0.7.2",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0",
+]
+
+[project.scripts]
+calendar-webscraper = "main:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "requests-mock>=1.12",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--tb=short"
+
+[tool.coverage.run]
+source = ["helpers", "libs"]
+omit = ["tests/*"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["helpers", "libs"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

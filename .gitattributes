@@ -1,0 +1,23 @@
+# Normalise all text files to LF in the repository.
+# Git will convert to the platform's native line ending on checkout
+# only if core.autocrlf is set — the * text=auto line below lets Git
+# decide per-file whether to apply conversion.
+
+*           text=auto eol=lf
+
+# Explicitly LF — scripts and config that must stay LF regardless of platform
+*.py        text eol=lf
+*.yaml      text eol=lf
+*.yml       text eol=lf
+*.toml      text eol=lf
+*.md        text eol=lf
+*.txt       text eol=lf
+*.env*      text eol=lf
+.gitignore  text eol=lf
+
+# Binary — never touch line endings
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.ico       binary
