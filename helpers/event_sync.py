@@ -234,7 +234,7 @@ def match_game_to_event(
        instant is unchanged, else ``reschedule``.
     2. **Legacy fallback** — only events *without* a key (created before key
        tracking) are considered: exact start-instant match → ``exact``; same
-       calendar date → ``reschedule``. Keyed events for other games are never
+       calendar date (compared in the game's timezone) → ``reschedule``. Keyed events for other games are never
        matched, so double-headers cannot collide.
     3. Otherwise ``("create", None)``.
 
@@ -252,7 +252,7 @@ def match_game_to_event(
         if event.start == game.start:
             return "exact", event
     for event in legacy:
-        if event.start.date() == game.start.date():
+        if event.start.astimezone(game.start.tzinfo).date() == game.start.date():
             return "reschedule", event
 
     return "create", None

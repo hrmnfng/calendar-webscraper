@@ -295,6 +295,21 @@ class TestMatchGameToEvent:
         )
         assert match_game_to_event(game, [ev]) == ("create", None)
 
+    def test_legacy_same_sydney_date_matches_across_utc_offset(self):
+        """A keyless event returned by GCal in UTC must still match by Sydney date."""
+        game = _game()  # 2026-01-15 21:10 Sydney
+        # 2026-01-14 20:00 UTC == 2026-01-15 07:00 Sydney: same Sydney date as
+        # the game, but a different UTC calendar date.
+        events = [{
+            "id": "e1",
+            "start": {"dateTime": "2026-01-14T20:00:00Z"},
+            "extendedProperties": {"private": {}},
+        }]
+        legacy = parse_existing_events(events)
+        action, matched = match_game_to_event(game, legacy)
+        assert action == "reschedule"
+        assert matched.id == "e1"
+
 
 class TestBuildReschedulePatch:
 
