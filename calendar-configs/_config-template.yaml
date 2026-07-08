@@ -5,3 +5,8 @@
 name: # The name of the calendar - this is used to uniquely identify each calendar, so please ensure that it is not already in use
 url: # The url from which this calendar is derived - it will also be include in the calendar description
 color_id: # The default color of the events used in the calendar.
+
+# Optional: where to fetch the schedule from.
+#   ssb-api  (default) — WordPress JSON API; falls back to HTML automatically
+#   ssb-html           — force HTML page scraping
+# source: "ssb-api"
