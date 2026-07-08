@@ -23,6 +23,10 @@ class Game:
     venue: str
     details_url: str
 
+    def __post_init__(self) -> None:
+        if self.start.tzinfo is None or self.end.tzinfo is None:
+            raise ValueError("Game.start and Game.end must be timezone-aware datetimes")
+
 
 @dataclass(frozen=True)
 class ExistingEvent:
@@ -30,4 +34,8 @@ class ExistingEvent:
 
     id: str
     key: str | None     # gameKey extended property; None for legacy events
-    start: datetime     # timezone-aware
+    start: datetime     # timezone-aware (offset as returned by GCal; may differ from Game.start's zone — aware datetime equality still compares instants)
+
+    def __post_init__(self) -> None:
+        if self.start.tzinfo is None:
+            raise ValueError("ExistingEvent.start must be a timezone-aware datetime")
