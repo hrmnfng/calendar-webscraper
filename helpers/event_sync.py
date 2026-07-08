@@ -71,14 +71,14 @@ def simplify_existing_events(existing_events: list[dict]) -> dict[str, dict]:
     return events_simple
 
 
-def filter_events_by_schedule(events_list: dict, schedule_url: str) -> list[dict]:
+def filter_events_by_schedule(events: list[dict], schedule_url: str) -> list[dict]:
     """
     Return only the events whose ``extendedProperties.private.schedule``
     matches *schedule_url*.
     """
     return [
         event
-        for event in events_list.get("items", [])
+        for event in events
         if event.get("extendedProperties", {})
            .get("private", {})
            .get("schedule") == schedule_url

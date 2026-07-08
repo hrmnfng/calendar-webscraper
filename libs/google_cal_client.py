@@ -153,9 +153,24 @@ class GoogleCalClient:
             calendarId=calendar_id, eventId=event_id, body=updated_event
         ).execute()
 
-    def list_events(self, calendar_id: str = "primary") -> dict:
-        """Return the events list dict for *calendar_id*."""
-        return self.service.events().list(calendarId=calendar_id).execute()
+    def list_events(self, calendar_id: str = "primary") -> list[dict]:
+        """
+        Return **all** events for *calendar_id*, following pagination.
+
+        The Calendar API returns at most 250 events per page; without
+        pagination, events beyond the first page would be silently missed
+        and re-created as duplicates.
+        """
+        events: list[dict] = []
+        page_token: str | None = None
+        while True:
+            response = self.service.events().list(
+                calendarId=calendar_id, pageToken=page_token
+            ).execute()
+            events.extend(response.get("items", []))
+            page_token = response.get("nextPageToken")
+            if not page_token:
+                return events
 
     def get_event_details(self, event_id: str, calendar_id: str = "primary") -> dict:
         """Return the full event dict for *event_id*."""

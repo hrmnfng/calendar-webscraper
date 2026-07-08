@@ -92,14 +92,15 @@ class TestFilterEventsBySchedule:
     def test_returns_matching_events(self):
         e1 = _gcal_event("id1", "2025-08-10T10:00:00", SCHEDULE_URL)
         e2 = _gcal_event("id2", "2025-08-17T10:00:00", "https://other.com/")
-        result = filter_events_by_schedule({"items": [e1, e2]}, SCHEDULE_URL)
+        result = filter_events_by_schedule([e1, e2], SCHEDULE_URL)
         assert len(result) == 1 and result[0]["id"] == "id1"
 
-    def test_empty_items_returns_empty(self):
-        assert filter_events_by_schedule({"items": []}, SCHEDULE_URL) == []
+    def test_empty_list_returns_empty(self):
+        assert filter_events_by_schedule([], SCHEDULE_URL) == []
 
-    def test_missing_items_key_returns_empty(self):
-        assert filter_events_by_schedule({}, SCHEDULE_URL) == []
+    def test_no_matching_schedule_returns_empty(self):
+        e1 = _gcal_event("id1", "2025-08-10T10:00:00", "https://other.com/")
+        assert filter_events_by_schedule([e1], SCHEDULE_URL) == []
 
 
 class TestBuildPatchPayload:
