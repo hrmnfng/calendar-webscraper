@@ -19,6 +19,7 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
+import requests
 from loguru import logger
 
 from helpers.config_loader import CalendarConfig
@@ -60,3 +61,136 @@ def round_label_from_slug(slug: str) -> str | None:
     if slug.endswith("grand-final") or slug.endswith("grand-finals"):
         return "Grand Final"
     return None
+
+
+def _wp_api_base(config_url: str) -> str:
+    parts = urlparse(config_url)
+    return f"{parts.scheme}://{parts.netloc}/wp-json/wp/v2"
+
+
+def _team_slug(config_url: str) -> str:
+    return urlparse(config_url).path.rstrip("/").rsplit("/", 1)[-1]
+
+
+def _get_all_pages(client: ScraperClient, url: str, params: dict) -> list[dict]:
+    """Fetch every page of a WP REST collection (100 items per page)."""
+    results: list[dict] = []
+    page = 1
+    while True:
+        try:
+            batch = client.get_json(
+                url, params={**params, "per_page": _WP_PAGE_SIZE, "page": page}
+            )
+        except requests.HTTPError as exc:
+            # WP returns 400 rest_post_invalid_page_number one page past the
+            # end when the total is an exact multiple of per_page.
+            if page > 1 and exc.response is not None and exc.response.status_code == 400:
+                return results
+            raise
+        results.extend(batch)
+        if len(batch) < _WP_PAGE_SIZE:
+            return results
+        page += 1
+
+
+def fetch_games_ssb_api(client: ScraperClient, config: CalendarConfig) -> list[Game]:
+    """
+    Fetch the schedule via the SSB WordPress REST API.
+
+    Resolves the team post from the config URL slug, searches match posts by
+    the team's full title, then keeps only matches where this team is the
+    home or away side (search alone is fuzzy).
+    """
+    base = _wp_api_base(config.url)
+    slug = _team_slug(config.url)
+
+    teams = client.get_json(f"{base}/team", params={"slug": slug})
+    if not teams:
+        raise ScrapeError(f"No WP team post found for slug {slug!r}")
+    team = teams[0]
+    team_id = team["id"]
+    team_title = html.unescape(team["title"]["rendered"])
+    logger.debug(f"Resolved team slug {slug!r} to post {team_id} ({team_title!r})")
+
+    matches = _get_all_pages(client, f"{base}/match", params={"search": team_title})
+
+    games: list[Game] = []
+    for match in matches:
+        acf = match["acf"]
+        home, away = acf["home_team"], acf["away_team"]
+        if team_id not in (home["ID"], away["ID"]):
+            continue
+        opponent = away["post_title"] if home["ID"] == team_id else home["post_title"]
+        round_label = round_label_from_slug(match["slug"]) or match["slug"]
+        # acf.time is Sydney wall-clock encoded as a UTC epoch: decode as UTC,
+        # keep the wall-clock digits, and re-label the zone as Sydney.
+        start = datetime.fromtimestamp(acf["time"], tz=timezone.utc).replace(
+            tzinfo=SYDNEY
+        )
+        games.append(
+            Game(
+                key=normalize_round_key(round_label),
+                title=f"{round_label}: {opponent}",
+                start=start,
+                end=start + GAME_DURATION,
+                venue=acf["venue"]["post_title"],
+                details_url=match["link"],
+            )
+        )
+
+    if not games:
+        raise ScrapeError(
+            f"No games found via API for team {team_title!r} "
+            f"({len(matches)} search results, none matched team id {team_id})"
+        )
+    games.sort(key=lambda g: g.start)
+    logger.info(f"API source: {len(games)} games for {team_title!r}")
+    return games
+
+
+def fetch_games_ssb_html(client: ScraperClient, config: CalendarConfig) -> list[Game]:
+    """Fetch the schedule by scraping the team's HTML page (fallback path)."""
+    html_content = client.get_html(config.url)
+    raw_games = HTMLHelper.parse_html_content(
+        html_content=html_content, parse_type="ssb"
+    )
+    if not raw_games:
+        raise ScrapeError(f"HTML source parsed no games from {config.url}")
+
+    games = [
+        Game(
+            key=normalize_round_key(raw["round_label"]),
+            title=raw["round"],
+            start=raw["start"].replace(tzinfo=SYDNEY),
+            end=raw["end"].replace(tzinfo=SYDNEY),
+            venue=raw["location"],
+            details_url=raw["details_url"],
+        )
+        for raw in raw_games
+    ]
+    logger.info(f"HTML source: {len(games)} games from {config.url}")
+    return games
+
+
+SOURCES = {
+    "ssb-api": fetch_games_ssb_api,
+    "ssb-html": fetch_games_ssb_html,
+}
+
+
+def fetch_games(client: ScraperClient, config: CalendarConfig) -> list[Game]:
+    """
+    Fetch games using the config's source; if the API source fails for any
+    reason, automatically fall back to HTML scraping.
+    """
+    fetch = SOURCES[config.source]
+    try:
+        return fetch(client, config)
+    except Exception:
+        if config.source != "ssb-api":
+            raise
+        logger.exception(
+            f"API source failed for '{config.name}' — falling back to HTML scraping"
+        )
+        # Look up via the registry (not a direct call) so tests can stub it.
+        return SOURCES["ssb-html"](client, config)
