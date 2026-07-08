@@ -139,6 +139,35 @@ class TestFetchGamesSsbApi:
         # 1 team call + 2 match pages
         assert client.get_json.call_count == 3
 
+    def test_malformed_match_is_skipped_not_fatal(self):
+        broken = {"id": 999, "slug": "broken-match", "acf": {"home_team": None}}
+        client = self._client([TEAM_POST], [[broken, OUR_MATCH]])
+        games = fetch_games_ssb_api(client, CONFIG)
+        assert len(games) == 1
+        assert games[0].key == "round1"
+
+    def test_match_with_falsy_time_is_skipped(self):
+        tbd = _match(
+            531003, "leteam-vs-someone-2025-s4-r2",
+            519104, "LeTeam 2025 s4", 519300, "Someone 2025 s4", 0,
+        )
+        client = self._client([TEAM_POST], [[tbd, OUR_MATCH]])
+        games = fetch_games_ssb_api(client, CONFIG)
+        assert [g.key for g in games] == ["round1"]
+
+    def test_search_term_unescapes_html_entities(self):
+        team = {"id": 519104, "title": {"rendered": "40s &#038; Shorties 2025 s4"}}
+        client = self._client([team], [[OUR_MATCH]])
+        fetch_games_ssb_api(client, CONFIG)
+        match_call = client.get_json.call_args_list[1]
+        assert match_call.kwargs["params"]["search"] == "40s & Shorties 2025 s4"
+
+    def test_pagination_cap_raises(self):
+        full_page = [OTHER_MATCH] * 100
+        client = self._client([TEAM_POST], [full_page] * 60)
+        with pytest.raises(ScrapeError, match="pagination"):
+            fetch_games_ssb_api(client, CONFIG)
+
 
 class TestFetchGamesSsbHtml:
 

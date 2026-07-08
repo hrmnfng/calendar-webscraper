@@ -32,6 +32,7 @@ GAME_DURATION = timedelta(hours=1)
 
 # WordPress REST API caps per_page at 100.
 _WP_PAGE_SIZE = 100
+_WP_MAX_PAGES = 50
 
 
 def normalize_round_key(label: str) -> str:
@@ -77,6 +78,11 @@ def _get_all_pages(client: ScraperClient, url: str, params: dict) -> list[dict]:
     results: list[dict] = []
     page = 1
     while True:
+        if page > _WP_MAX_PAGES:
+            raise ScrapeError(
+                f"WP API pagination exceeded {_WP_MAX_PAGES} pages for {url}"
+                " — search term too broad?"
+            )
         try:
             batch = client.get_json(
                 url, params={**params, "per_page": _WP_PAGE_SIZE, "page": page}
@@ -116,26 +122,52 @@ def fetch_games_ssb_api(client: ScraperClient, config: CalendarConfig) -> list[G
 
     games: list[Game] = []
     for match in matches:
-        acf = match["acf"]
-        home, away = acf["home_team"], acf["away_team"]
-        if team_id not in (home["ID"], away["ID"]):
-            continue
-        opponent = away["post_title"] if home["ID"] == team_id else home["post_title"]
-        round_label = round_label_from_slug(match["slug"]) or match["slug"]
-        # acf.time is Sydney wall-clock encoded as a UTC epoch: decode as UTC,
-        # keep the wall-clock digits, and re-label the zone as Sydney.
-        start = datetime.fromtimestamp(acf["time"], tz=timezone.utc).replace(
-            tzinfo=SYDNEY
-        )
-        games.append(
-            Game(
-                key=normalize_round_key(round_label),
-                title=f"{round_label}: {opponent}",
-                start=start,
-                end=start + GAME_DURATION,
-                venue=acf["venue"]["post_title"],
-                details_url=match["link"],
+        try:
+            acf = match["acf"]
+            home, away = acf["home_team"], acf["away_team"]
+            if team_id not in (home["ID"], away["ID"]):
+                continue
+            opponent = away["post_title"] if home["ID"] == team_id else home["post_title"]
+            round_label = round_label_from_slug(match["slug"]) or match["slug"]
+            # acf.time is Sydney wall-clock encoded as a UTC epoch: decode as UTC,
+            # keep the wall-clock digits, and re-label the zone as Sydney.
+            time_val = acf["time"]
+            if not time_val:
+                logger.warning(
+                    f"Match {match.get('id')} ({match.get('slug')!r}) has no scheduled"
+                    " time (TBD) — skipping"
+                )
+                continue
+            start = datetime.fromtimestamp(time_val, tz=timezone.utc).replace(
+                tzinfo=SYDNEY
             )
+            games.append(
+                Game(
+                    key=normalize_round_key(round_label),
+                    title=f"{round_label}: {opponent}",
+                    start=start,
+                    end=start + GAME_DURATION,
+                    venue=acf["venue"]["post_title"],
+                    details_url=match["link"],
+                )
+            )
+        except (KeyError, TypeError):
+            logger.warning(
+                f"Match {match.get('id')} ({match.get('slug')!r}) is malformed"
+                " — skipping"
+            )
+            continue
+
+    # Warn about duplicate round keys — one game per round is a load-bearing
+    # assumption for identity-based calendar sync.
+    seen_keys: dict[str, int] = {}
+    for game in games:
+        seen_keys[game.key] = seen_keys.get(game.key, 0) + 1
+    duplicates = [k for k, count in seen_keys.items() if count > 1]
+    if duplicates:
+        logger.warning(
+            f"Duplicate round keys detected for team {team_title!r}: {duplicates}"
+            " — only the last game per key will survive identity-based sync"
         )
 
     if not games:
