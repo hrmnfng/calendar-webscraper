@@ -194,6 +194,13 @@ class TestGetJson:
         scraper.get_json(DUMMY_URL, params={"slug": "leteam-12"})
         assert requests_mock.last_request.qs == {"slug": ["leteam-12"]}
 
+    def test_uses_configured_timeout(self, scraper, requests_mock):
+        requests_mock.get(DUMMY_URL, json=[])
+        with patch.object(scraper._session, "get", wraps=scraper._session.get) as mock_get:
+            scraper.get_json(DUMMY_URL)
+            _, kwargs = mock_get.call_args
+            assert kwargs.get("timeout") == 5
+
     def test_retries_on_503(self, scraper, requests_mock):
         requests_mock.get(DUMMY_URL, status_code=503)
         with pytest.raises(requests.HTTPError):

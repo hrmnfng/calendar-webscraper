@@ -97,7 +97,7 @@ class ScraperClient:
         response.raise_for_status()
         return response.text
 
-    def get_json(self, address: str, params: dict | None = None):
+    def get_json(self, address: str, params: dict | None = None) -> list | dict:
         """
         Fetch and parse JSON from *address*, retrying on the same transient
         errors as :meth:`get_html`.
@@ -118,7 +118,7 @@ class ScraperClient:
         before_sleep=before_sleep_log(logging.getLogger(__name__), logging.WARNING),
         reraise=True,
     )
-    def _get_json_with_retry(self, address: str, params: dict | None):
+    def _get_json_with_retry(self, address: str, params: dict | None) -> list | dict:
         """Internal method that tenacity decorates for retry logic."""
         logger.debug(f"Fetching JSON from '{address}' (params={params})")
         response = self._session.get(address, params=params, timeout=self.default_timeout)
