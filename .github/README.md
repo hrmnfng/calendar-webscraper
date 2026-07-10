@@ -1,6 +1,6 @@
 # calendar-webscraper [![Schedule to Calendar](https://github.com/hrmnfng/calendar-webscraper/actions/workflows/execute-script.yml/badge.svg?branch=main)](https://github.com/hrmnfng/calendar-webscraper/actions/workflows/execute-script.yml?query=branch%3Amain)
 
-A Python script that scrapes basketball schedule pages and syncs them into Google Calendar — creating new events, updating reschedules, and patching stale fields automatically.
+A Python script that fetches basketball schedules from the SSB WordPress JSON API (falling back to HTML scraping if the API is unavailable) and syncs them into Google Calendar — creating new events, updating reschedules, and patching stale fields automatically. The run exits non-zero if any calendar fails to sync, so the GitHub Actions badge and email notifications surface failures.
 
 Runs daily at 6am AEST via GitHub Actions, and can also be triggered manually or run locally.
 
@@ -18,11 +18,13 @@ calendar-webscraper/
 ├── helpers/
 │   ├── ascii_strings.py        # ASCII art banners used in log output
 │   ├── config_loader.py        # Loads and validates calendar-configs/*.yaml files
-│   ├── event_sync.py           # Pure functions: event matching, patching, diffing
-│   └── html_parser.py          # BeautifulSoup HTML parsing for SSB schedule pages
+│   ├── event_sync.py           # Pure functions: identity-based event matching and diffing
+│   ├── html_parser.py          # BeautifulSoup HTML parsing (fallback source)
+│   ├── models.py               # Game / ExistingEvent dataclasses
+│   └── sources.py              # Schedule sources: WordPress JSON API (primary) + HTML fallback
 ├── libs/
 │   ├── google_cal_client.py    # Google Calendar API client (OAuth2)
-│   └── scraper_client.py       # HTTP client with retry — fetches HTML and parses it
+│   └── scraper_client.py       # HTTP client with retry — HTML and JSON fetching
 ├── calendar-configs/
 │   ├── _config-template.yaml   # Template for adding new team calendars
 │   └── config-*.yaml           # Active team configs (files ending .yaml.disable are ignored)
@@ -108,12 +110,13 @@ uv run pytest --cov
 ## Adding a new team calendar
 
 1. Copy `calendar-configs/_config-template.yaml` to `calendar-configs/config-<your-team>.yaml`.
-2. Fill in the three fields:
+2. Fill in the fields:
 
 ```yaml
 name: My Team Name        # Must be unique across all your calendars
 url: https://sydneysocialbasketball.com.au/team/<slug>/
 color_id: 5               # Integer 1–11 (see colors.yaml for reference)
+source: ssb-api           # Optional: "ssb-api" (default, JSON API with HTML fallback) or "ssb-html"
 ```
 
 3. To temporarily disable a calendar without deleting it, rename the file to end in `.yaml.disable`.
