@@ -26,15 +26,20 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   run-script:
+    permissions:
+      contents: read
+      actions: write
     runs-on: ubuntu-latest
     env:
       GCAL_CLIENT_ID: ${{ secrets.GCAL_CLIENT_ID }}
       GCAL_CLIENT_SECRET: ${{ secrets.GCAL_CLIENT_SECRET }}
       GCAL_REFRESH_TOKEN: ${{ secrets.GCAL_REFRESH_TOKEN }}
       LOG_LEVEL: INFO
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
