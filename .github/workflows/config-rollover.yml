@@ -1,0 +1,65 @@
+# Weekly check for newer per-season team pages on the SSB site.
+# Rewrites stale calendar-configs/*.yaml URLs and raises a single combined PR.
+# Runs Monday 6am AEST (UTC+10), or on manual dispatch.
+
+name: Config Season Rollover
+
+on:
+  workflow_dispatch:
+
+  schedule:
+    - cron: '0 20 * * 0' # Monday 6am AEST (Sunday 20:00 UTC)
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  check-rollover:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+
+      - name: Install dependencies
+        run: uv sync --no-dev
+
+      - name: Check for newer team pages
+        run: uv run python src/check_rollover.py
+
+      - name: Create or update rollover PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet -- calendar-configs; then
+            echo "All configs are on the newest season pages — nothing to do."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -B chore/config-rollover
+          git add calendar-configs
+          git commit -m "chore: roll calendar configs to newest season pages"
+          git push --force origin chore/config-rollover
+          if [ "$(gh pr list --head chore/config-rollover --state open --json number --jq length)" = "0" ]; then
+            gh pr create \
+              --title "chore: config season rollover" \
+              --body-file rollover-summary.md \
+              --base main
+          else
+            gh pr edit chore/config-rollover --body-file rollover-summary.md
+          fi
