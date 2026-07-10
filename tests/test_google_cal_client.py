@@ -167,6 +167,7 @@ class TestEnsureCalendarPublic:
             calendarId="cal-1",
             body={"role": "reader", "scope": {"type": "default"}},
         )
+        service.acl.return_value.insert.return_value.execute.assert_called_once()
 
     def test_noop_when_already_public(self):
         client, service = self._client_with_acl(
