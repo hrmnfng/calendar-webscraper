@@ -111,11 +111,13 @@ def check_config_rollover(client: ScraperClient, config_path: Path) -> RolloverR
     """
     raw = yaml.safe_load(config_path.read_text(encoding="utf-8"))
     url = (raw or {}).get("url", "")
-    if not url:
+    if not url or not isinstance(url, str):
         return RolloverResult(config_path.name, "skipped", "no url field")
 
     api_base = _wp_api_base(url)
     slug = _team_slug(url)
+    if not slug:
+        return RolloverResult(config_path.name, "skipped", f"no team slug in url {url!r}")
 
     current_posts = client.get_json(f"{api_base}/team", params={"slug": slug})
     if not current_posts:
@@ -123,7 +125,10 @@ def check_config_rollover(client: ScraperClient, config_path: Path) -> RolloverR
             config_path.name, "skipped", f"slug {slug!r} not found on site"
         )
 
-    current_title = html.unescape(current_posts[0]["title"]["rendered"])
+    title_data = current_posts[0].get("title") or {}
+    current_title = html.unescape(title_data.get("rendered", ""))
+    if not current_title:
+        return RolloverResult(config_path.name, "skipped", "current post has no title")
     base_name = base_team_name(current_title)
     if base_name is None:
         return RolloverResult(

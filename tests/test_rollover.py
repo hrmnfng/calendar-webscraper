@@ -150,3 +150,26 @@ class TestCheckConfigRollover:
         )
         result = check_config_rollover(client, path)
         assert result.status == "skipped"
+
+    def test_skips_when_url_is_not_a_string(self, tmp_path):
+        path = tmp_path / "config-bad.yaml"
+        path.write_text("name: \"Bad\"\nurl: 42\ncolor_id: 9\n")
+        result = check_config_rollover(MagicMock(), path)
+        assert result.status == "skipped"
+
+    def test_skips_when_current_post_has_no_title(self, tmp_path):
+        path = self._config(tmp_path)
+        client = self._client([{"slug": "leteam-12", "date": "2025-12-12T11:19:04"}], [])
+        result = check_config_rollover(client, path)
+        assert result.status == "skipped"
+        assert "title" in result.detail
+
+    def test_skips_when_only_fuzzy_matches_found(self, tmp_path):
+        path = self._config(tmp_path)
+        client = self._client(
+            [_post("leteam-12", "LeTeam 2025 s4", "2025-12-12T11:19:04")],
+            [[_post("the-leteam", "The LeTeam 2025 s4", "2025-04-02T08:43:50")]],
+        )
+        result = check_config_rollover(client, path)
+        assert result.status == "skipped"
+        assert path.read_text() == CONFIG_TEXT  # file untouched
