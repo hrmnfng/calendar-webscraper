@@ -1,6 +1,6 @@
 # Weekly check for newer per-season team pages on the SSB site.
 # Rewrites stale calendar-configs/*.yaml URLs and raises a single combined PR.
-# Runs Monday 6am AEST (UTC+10), or on manual dispatch.
+# Runs Monday morning Sydney time, or on manual dispatch.
 
 name: Config Season Rollover
 
@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
   schedule:
-    - cron: '0 20 * * 0' # Monday 6am AEST (Sunday 20:00 UTC)
+    - cron: '0 20 * * 0' # Monday 6am AEST / 7am AEDT (Sunday 20:00 UTC)
 
 permissions:
   contents: write
@@ -41,6 +41,9 @@ jobs:
       - name: Check for newer team pages
         run: uv run python src/check_rollover.py
 
+      # Requires repo setting: Actions → General → "Allow GitHub Actions to
+      # create and approve pull requests". Note: PRs opened with the built-in
+      # GITHUB_TOKEN do not trigger other workflows (e.g. CodeQL) on the PR.
       - name: Create or update rollover PR
         env:
           GH_TOKEN: ${{ github.token }}
