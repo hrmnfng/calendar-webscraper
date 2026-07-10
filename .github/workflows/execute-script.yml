@@ -1,5 +1,7 @@
-# Scrapes basketball schedules and syncs them to Google Calendar.
+# Fetches basketball schedules (WP API with HTML fallback) and syncs them to
+# Google Calendar, then deploys the public calendar-links page to GitHub Pages.
 # Runs daily at 6am AEST (UTC+10), or on manual dispatch.
+# Requires repo setting: Settings → Pages → Source: "GitHub Actions".
 
 name: Schedule to Calendar
 
@@ -16,21 +18,28 @@ on:
           - DEBUG
 
   schedule:
-    - cron: '0 20 * * *' # 6am AEST (UTC+10)
+    - cron: '0 6 * * *' # 6am AEST (UTC+10)
+      timezone: "Australia/Sydney"
+      
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   run-script:
+    permissions:
+      contents: read
+      actions: write
     runs-on: ubuntu-latest
     env:
       GCAL_CLIENT_ID: ${{ secrets.GCAL_CLIENT_ID }}
       GCAL_CLIENT_SECRET: ${{ secrets.GCAL_CLIENT_SECRET }}
       GCAL_REFRESH_TOKEN: ${{ secrets.GCAL_REFRESH_TOKEN }}
       LOG_LEVEL: INFO
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -58,4 +67,23 @@ jobs:
           fi
 
       - name: Run script
-        run: uv run python main.py
+        run: uv run python src/main.py
+
+      - name: Upload calendar links page
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy-pages:
+    needs: run-script
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
