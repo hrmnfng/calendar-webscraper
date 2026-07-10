@@ -47,7 +47,7 @@ class GoogleCalClient:
             else:
                 sys.exit(
                     'Credentials are invalid. Please generate a new refresh token '
-                    'by running `uv run python libs/google_cal_client.py`.'
+                    'by running `uv run python src/libs/google_cal_client.py`.'
                 )
 
         self.service = build("calendar", "v3", credentials=self.creds)
