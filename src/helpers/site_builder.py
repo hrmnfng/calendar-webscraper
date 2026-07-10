@@ -27,8 +27,8 @@ def _row(name: str, calendar_id: str) -> str:
     return (
         "      <tr>\n"
         f"        <td><strong>{safe_name}</strong></td>\n"
-        f'        <td><a href="{google_url}">Google Calendar</a></td>\n'
-        f'        <td><a href="{outlook_url}">Outlook</a></td>\n'
+        f'        <td><a href="{html.escape(google_url)}">Google Calendar</a></td>\n'
+        f'        <td><a href="{html.escape(outlook_url)}">Outlook</a></td>\n'
         f'        <td><a href="{ics_url}">ICS (Apple / other)</a></td>\n'
         "      </tr>"
     )

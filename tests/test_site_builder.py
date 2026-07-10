@@ -40,7 +40,12 @@ class TestBuildSite:
 
     def test_footer_contains_updated_timestamp(self):
         page = build_site([], updated=UPDATED)
-        assert "2026-07-10" in page
+        assert "2026-07-10 06:00" in page
+
+    def test_ampersands_in_hrefs_are_escaped(self):
+        page = build_site([("LeTeam", CAL_ID)], updated=UPDATED)
+        assert "&ctz=" not in page
+        assert "&amp;ctz=" in page
 
     def test_subscribe_hint_present(self):
         page = build_site([], updated=UPDATED)
