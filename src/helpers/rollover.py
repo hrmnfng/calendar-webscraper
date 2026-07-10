@@ -1,0 +1,157 @@
+"""
+Season-rollover detection for calendar configs.
+
+Each SSB team gets a new WordPress team post every season (slug
+``shake-shaq-17`` → ``shake-shaq-19``); preseason and grading posts also
+appear as their own team posts and count as newer versions. These helpers detect when a config's team
+URL points at an outdated post and rewrite the config file in place.
+
+Pure logic lives here; ``src/check_rollover.py`` is the CLI entry point.
+"""
+
+from __future__ import annotations
+
+import html
+import re
+from dataclasses import dataclass
+from pathlib import Path
+
+import yaml
+
+# Reuse the WP-API plumbing from the game sources module (same app, shared
+# conventions — pagination and URL derivation must not drift between them).
+from helpers.sources import _get_all_pages, _team_slug, _wp_api_base
+from libs.scraper_client import ScraperClient
+
+# Matches season suffixes: "Shake Shaq 2025 s4", "Shake Shaq 2026 s1 preseason",
+# "Shake Shaq 2023 s3 grading" — everything from " <year> s<N>" onward.
+_SEASON_SUFFIX = re.compile(r"\s+\d{4}\s+s\d+\b.*$", re.IGNORECASE)
+
+
+@dataclass(frozen=True)
+class RolloverResult:
+    """Outcome of checking one config file."""
+
+    config_file: str
+    status: str  # "updated" | "unchanged" | "skipped"
+    detail: str
+
+
+def base_team_name(title: str) -> str | None:
+    """
+    Strip the season suffix from a team post title.
+
+    ``"Shake Shaq 2025 s4"`` → ``"Shake Shaq"``; ``"Shake Shaq 2026 s1
+    preseason"`` → ``"Shake Shaq"``. Returns ``None`` when the title has no
+    recognizable season suffix (nothing was stripped), since a prefix search
+    on it would be meaningless.
+    """
+    unescaped = html.unescape(title).strip()
+    stripped = _SEASON_SUFFIX.sub("", unescaped).strip()
+    if not stripped or stripped == unescaped:
+        return None
+    return stripped
+
+
+def find_newest_team_post(posts: list[dict], base_name: str) -> dict | None:
+    """
+    Return the newest (by post ``date``) team post whose unescaped title
+    starts with ``"<base_name> "``.
+
+    Prefix matching excludes fuzzy WP-search hits like "The Shake Shaq ..."
+    when looking for "Shake Shaq". Slugs are never compared for ordering —
+    their numbering is not clean (``shake-shaq-8-2``, ``shake-shaq-7-3``).
+    """
+    prefix = f"{base_name.lower()} "
+    candidates = [
+        post
+        for post in posts
+        if html.unescape(post.get("title", {}).get("rendered", ""))
+        .lower()
+        .startswith(prefix)
+    ]
+    if not candidates:
+        return None
+    return max(candidates, key=lambda post: post.get("date", ""))
+
+
+def rewrite_config_url(config_path: Path, new_url: str) -> None:
+    """Replace the value of the first ``url:`` line, leaving all other lines verbatim."""
+    text = config_path.read_text(encoding="utf-8")
+    new_text = re.sub(
+        r"(?m)^(url:\s*).*$",
+        lambda m: f'{m.group(1)}"{new_url}"',
+        text,
+        count=1,
+    )
+    config_path.write_text(new_text, encoding="utf-8")
+
+
+def build_summary(results: list[RolloverResult]) -> str:
+    """Render the markdown summary used as the rollover PR body."""
+    lines = [
+        "## Config season rollover",
+        "",
+        "Automated weekly check of team pages on the SSB site.",
+        "",
+        "| Config | Status | Detail |",
+        "| --- | --- | --- |",
+    ]
+    for result in results:
+        detail = result.detail.replace("|", "\\|")
+        lines.append(f"| `{result.config_file}` | {result.status} | {detail} |")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def check_config_rollover(client: ScraperClient, config_path: Path) -> RolloverResult:
+    """
+    Check one config file against the site; rewrite its ``url:`` line if a
+    newer season post exists for the team.
+    """
+    raw = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    url = (raw or {}).get("url", "")
+    if not url or not isinstance(url, str):
+        return RolloverResult(config_path.name, "skipped", "no url field")
+
+    api_base = _wp_api_base(url)
+    slug = _team_slug(url)
+    if not slug:
+        return RolloverResult(config_path.name, "skipped", f"no team slug in url {url!r}")
+
+    current_posts = client.get_json(f"{api_base}/team", params={"slug": slug})
+    if not current_posts:
+        return RolloverResult(
+            config_path.name, "skipped", f"slug {slug!r} not found on site"
+        )
+
+    title_data = current_posts[0].get("title") or {}
+    current_title = html.unescape(title_data.get("rendered", ""))
+    if not current_title:
+        return RolloverResult(config_path.name, "skipped", "current post has no title")
+    base_name = base_team_name(current_title)
+    if base_name is None:
+        return RolloverResult(
+            config_path.name,
+            "skipped",
+            f"no season suffix in title {current_title!r}",
+        )
+
+    posts = _get_all_pages(client, f"{api_base}/team", params={"search": base_name})
+    newest = find_newest_team_post(posts, base_name)
+    if newest is None:
+        return RolloverResult(
+            config_path.name, "skipped", f"no posts match {base_name!r}"
+        )
+
+    if newest["slug"] == slug:
+        return RolloverResult(config_path.name, "unchanged", f"already on {slug!r}")
+
+    new_url = url.rstrip("/").rsplit("/", 1)[0] + f"/{newest['slug']}/"
+    rewrite_config_url(config_path, new_url)
+    newest_title = html.unescape(newest["title"]["rendered"])
+    return RolloverResult(
+        config_path.name,
+        "updated",
+        f"{slug} → {newest['slug']} ({newest_title!r})",
+    )

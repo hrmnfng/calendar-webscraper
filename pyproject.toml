@@ -21,9 +21,6 @@ dependencies = [
     "tzdata>=2024.1",
 ]
 
-[project.scripts]
-calendar-webscraper = "main:main"
-
 [dependency-groups]
 dev = [
     "pytest>=8.0",
@@ -34,13 +31,14 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--tb=short"
+pythonpath = ["src"]
 
 [tool.coverage.run]
-source = ["helpers", "libs"]
+source = ["src"]
 omit = ["tests/*"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["helpers", "libs"]
+packages = ["src/helpers", "src/libs"]
 
 [build-system]
 requires = ["hatchling"]

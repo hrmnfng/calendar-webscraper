@@ -11,12 +11,16 @@ from __future__ import annotations
 
 import os
 import sys
+from datetime import datetime
+from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
 from loguru import logger
 
 from helpers.ascii_strings import IMPORTANT_STUFF_1, IMPORTANT_STUFF_2, IMPORTANT_STUFF_3
 from helpers.config_loader import CalendarConfig, load_configs
+from helpers.site_builder import build_site
 from helpers.event_sync import (
     build_field_patch,
     build_reschedule_patch,
@@ -82,7 +86,7 @@ def sync_calendar(
     gclient: GoogleCalClient,
     scraper: ScraperClient,
     config: CalendarConfig,
-) -> None:
+) -> str:
     """
     Fetch the schedule for *config* and sync it into Google Calendar.
 
@@ -93,11 +97,14 @@ def sync_calendar(
     * **exact** — event exists at the right time; drifted fields are patched.
     * **reschedule** — event exists but the time changed; fully re-patched.
     * **create** — no matching event; a new one is inserted.
+
+    The calendar is made publicly readable automatically (ACL default-reader rule).
     """
     games = fetch_games(scraper, config)
 
     logger.log("MAJOR", IMPORTANT_STUFF_1)
     calendar_id = get_or_create_calendar(gclient, config.name, config.url)
+    gclient.ensure_calendar_public(calendar_id)
 
     logger.log("MAJOR", IMPORTANT_STUFF_2)
     all_events = gclient.list_events(calendar_id=calendar_id)
@@ -136,6 +143,7 @@ def sync_calendar(
             _create_event(gclient, calendar_id, game, config)
 
     logger.success(f"Finished syncing '{config.name}'")
+    return calendar_id
 
 
 def _create_event(
@@ -178,9 +186,11 @@ def main() -> None:
     configs = load_configs(CONFIG_DIR)
 
     failures: list[str] = []
+    synced: list[tuple[str, str]] = []
     for config in configs:
         try:
-            sync_calendar(gclient=gclient, scraper=scraper, config=config)
+            calendar_id = sync_calendar(gclient=gclient, scraper=scraper, config=config)
+            synced.append((config.name, calendar_id))
         except Exception:
             logger.exception(f"Failed to sync calendar '{config.name}'")
             failures.append(config.name)
@@ -192,6 +202,16 @@ def main() -> None:
             f"{len(failures)}/{len(configs)} calendar(s) failed to sync: {failures}"
         )
         sys.exit(1)
+
+    # Only written on a fully successful run — a failed run leaves the
+    # previously deployed page in place rather than publishing a partial list.
+    site_path = Path("site/index.html")
+    site_path.parent.mkdir(exist_ok=True)
+    site_path.write_text(
+        build_site(synced, updated=datetime.now(tz=ZoneInfo("Australia/Sydney"))),
+        encoding="utf-8",
+    )
+    logger.success(f"Wrote calendar links page to {site_path}")
 
 
 if __name__ == "__main__":

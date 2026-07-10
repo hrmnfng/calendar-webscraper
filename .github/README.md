@@ -6,7 +6,7 @@ Runs daily at 6am AEST via GitHub Actions, and can also be triggered manually or
 
 ## Adding the created calendars to your personal calendar
 
-See the [pinned issue](https://github.com/hrmnfng/calendar-webscraper/issues/13) for links to the available calendars.
+See the [published calendar page](https://hrmnfng.github.io/calendar-webscraper/) for subscribe links for every available calendar (Google, Outlook, and ICS for Apple/other clients).
 
 ---
 
@@ -14,17 +14,21 @@ See the [pinned issue](https://github.com/hrmnfng/calendar-webscraper/issues/13)
 
 ```
 calendar-webscraper/
-├── main.py                     # Entry point — orchestrates the full sync pipeline
-├── helpers/
-│   ├── ascii_strings.py        # ASCII art banners used in log output
-│   ├── config_loader.py        # Loads and validates calendar-configs/*.yaml files
-│   ├── event_sync.py           # Pure functions: identity-based event matching and diffing
-│   ├── html_parser.py          # BeautifulSoup HTML parsing (fallback source)
-│   ├── models.py               # Game / ExistingEvent dataclasses
-│   └── sources.py              # Schedule sources: WordPress JSON API (primary) + HTML fallback
-├── libs/
-│   ├── google_cal_client.py    # Google Calendar API client (OAuth2)
-│   └── scraper_client.py       # HTTP client with retry — HTML and JSON fetching
+├── src/
+│   ├── main.py                 # Entry point — orchestrates the full sync pipeline
+│   ├── check_rollover.py       # Weekly season-rollover checker (rewrites stale config URLs)
+│   ├── helpers/
+│   │   ├── ascii_strings.py    # ASCII art banners used in log output
+│   │   ├── config_loader.py    # Loads and validates calendar-configs/*.yaml files
+│   │   ├── event_sync.py       # Pure functions: identity-based event matching and diffing
+│   │   ├── html_parser.py      # BeautifulSoup HTML parsing (fallback source)
+│   │   ├── models.py           # Game / ExistingEvent dataclasses
+│   │   ├── rollover.py         # Season rollover detection for calendar configs
+│   │   ├── site_builder.py     # Renders the public calendar-links page
+│   │   └── sources.py          # Schedule sources: WordPress JSON API (primary) + HTML fallback
+│   └── libs/
+│       ├── google_cal_client.py # Google Calendar API client (OAuth2)
+│       └── scraper_client.py    # HTTP client with retry — HTML and JSON fetching
 ├── calendar-configs/
 │   ├── _config-template.yaml   # Template for adding new team calendars
 │   └── config-*.yaml           # Active team configs (files ending .yaml.disable are ignored)
@@ -49,7 +53,7 @@ calendar-webscraper/
 uv sync
 
 # Run the script
-uv run python main.py
+uv run python src/main.py
 ```
 
 ### Environment variables
@@ -80,7 +84,7 @@ LOG_LEVEL=INFO
 4. Download the JSON file, rename it to `credentials.json`, and place it in the repository root.
 5. Run the auth helper to generate your refresh token:
    ```shell
-   uv run python libs/google_cal_client.py
+   uv run python src/libs/google_cal_client.py
    ```
 6. Copy the printed `client_id`, `client_secret`, and `refresh_token` values into your `.env` file.
 7. Delete `credentials.json` — it is no longer needed.
@@ -121,4 +125,19 @@ source: ssb-api           # Optional: "ssb-api" (default, JSON API with HTML fal
 
 3. To temporarily disable a calendar without deleting it, rename the file to end in `.yaml.disable`.
 
-> After creating a new calendar, it must be manually set to **public** in Google Calendar before sharing. This cannot be done via the API.
+> New calendars are made public automatically on the next sync run and appear
+> on the [published calendar page](https://hrmnfng.github.io/calendar-webscraper/).
+
+---
+
+## Automation
+
+- **Daily sync** (`execute-script.yml`, 6am AEST): syncs every active config to
+  Google Calendar and, when fully successful, deploys the public
+  [calendar links page](https://hrmnfng.github.io/calendar-webscraper/) to
+  GitHub Pages. A failed run leaves the previously published page untouched.
+- **Weekly season rollover** (`config-rollover.yml`, Monday 6am AEST): checks
+  whether each team has a newer per-season page on the SSB site and, if so,
+  opens (or refreshes) a single `chore/config-rollover` PR updating the
+  affected `calendar-configs/*.yaml` URLs. Merge it to roll the calendar over
+  to the new season; the calendar itself is reused, so subscribers keep working.
