@@ -58,4 +58,4 @@ jobs:
           fi
 
       - name: Run script
-        run: uv run python main.py
+        run: uv run python src/main.py
