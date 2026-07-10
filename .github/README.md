@@ -6,7 +6,7 @@ Runs daily at 6am AEST via GitHub Actions, and can also be triggered manually or
 
 ## Adding the created calendars to your personal calendar
 
-See the [pinned issue](https://github.com/hrmnfng/calendar-webscraper/issues/13) for links to the available calendars.
+See the [published calendar page](https://hrmnfng.github.io/calendar-webscraper/) for subscribe links for every available calendar (Google, Outlook, and ICS for Apple/other clients).
 
 ---
 
