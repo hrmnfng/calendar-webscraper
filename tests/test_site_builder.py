@@ -16,19 +16,19 @@ CAL_ID = "abc123@group.calendar.google.com"
 
 class TestBuildSite:
     def test_contains_team_name_and_encoded_calendar_id(self):
-        page = build_site([("LeTeam", CAL_ID)], updated=UPDATED)
-        assert "LeTeam" in page
+        page = build_site([("Shake Shaq", CAL_ID)], updated=UPDATED)
+        assert "Shake Shaq" in page
         assert "abc123%40group.calendar.google.com" in page
 
     def test_contains_all_three_link_kinds(self):
-        page = build_site([("LeTeam", CAL_ID)], updated=UPDATED)
+        page = build_site([("Shake Shaq", CAL_ID)], updated=UPDATED)
         assert "calendar.google.com/calendar/embed?src=" in page
         assert "ctz=Australia%2FSydney" in page
         assert "/public/basic.ics" in page
         assert "outlook.live.com/calendar/0/addfromweb" in page
 
     def test_outlook_link_wraps_encoded_ics_url(self):
-        page = build_site([("LeTeam", CAL_ID)], updated=UPDATED)
+        page = build_site([("Shake Shaq", CAL_ID)], updated=UPDATED)
         assert (
             "addfromweb?url=https%3A%2F%2Fcalendar.google.com%2Fcalendar%2Fical"
             in page
@@ -43,7 +43,7 @@ class TestBuildSite:
         assert "2026-07-10 06:00" in page
 
     def test_ampersands_in_hrefs_are_escaped(self):
-        page = build_site([("LeTeam", CAL_ID)], updated=UPDATED)
+        page = build_site([("Shake Shaq", CAL_ID)], updated=UPDATED)
         assert "&ctz=" not in page
         assert "&amp;ctz=" in page
 

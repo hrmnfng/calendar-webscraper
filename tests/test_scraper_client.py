@@ -191,8 +191,8 @@ class TestGetJson:
 
     def test_passes_query_params(self, scraper, requests_mock):
         requests_mock.get(DUMMY_URL, json=[])
-        scraper.get_json(DUMMY_URL, params={"slug": "leteam-12"})
-        assert requests_mock.last_request.qs == {"slug": ["leteam-12"]}
+        scraper.get_json(DUMMY_URL, params={"slug": "shake-shaq-12"})
+        assert requests_mock.last_request.qs == {"slug": ["shake-shaq-12"]}
 
     def test_uses_configured_timeout(self, scraper, requests_mock):
         requests_mock.get(DUMMY_URL, json=[])

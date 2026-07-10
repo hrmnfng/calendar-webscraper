@@ -17,10 +17,10 @@ from helpers.sources import SOURCES, fetch_games, fetch_games_ssb_api, fetch_gam
 
 SYDNEY = ZoneInfo("Australia/Sydney")
 
-TEAM_URL = "https://sydneysocialbasketball.com.au/team/leteam-12/"
-CONFIG = CalendarConfig(name="LeTeam", url=TEAM_URL, color_id=9)
+TEAM_URL = "https://sydneysocialbasketball.com.au/team/shake-shaq-12/"
+CONFIG = CalendarConfig(name="Shake Shaq", url=TEAM_URL, color_id=9)
 
-TEAM_POST = {"id": 519104, "title": {"rendered": "LeTeam 2025 s4"}}
+TEAM_POST = {"id": 519104, "title": {"rendered": "Shake Shaq 2025 s4"}}
 
 def _match(match_id, slug, home_id, home_title, away_id, away_title, ts):
     return {
@@ -42,8 +42,8 @@ def _match(match_id, slug, home_id, home_title, away_id, away_title, ts):
 TS_R1 = int(datetime(2026, 1, 15, 21, 10, tzinfo=ZoneInfo("UTC")).timestamp())
 
 OUR_MATCH = _match(
-    531001, "leteam-vs-baby-dragons-2025-s4-r1",
-    519104, "LeTeam 2025 s4", 519200, "baby dragons 2025 s4", TS_R1,
+    531001, "shake-shaq-vs-baby-dragons-2025-s4-r1",
+    519104, "Shake Shaq 2025 s4", 519200, "baby dragons 2025 s4", TS_R1,
 )
 OTHER_MATCH = _match(
     531002, "pilgrims-vs-tigers-2025-s4-r1",
@@ -66,19 +66,19 @@ class TestNormalizeRoundKey:
 class TestRoundLabelFromSlug:
 
     def test_numbered_round(self):
-        slug = "leteam-vs-baby-dragons-2025-s4-r1"
+        slug = "shake-shaq-vs-baby-dragons-2025-s4-r1"
         assert round_label_from_slug(slug) == "Round 1"
 
     def test_double_digit_round(self):
-        slug = "arn2-denver-chicken-nuggets-vs-leteam-2026-s1-r10"
+        slug = "arn2-denver-chicken-nuggets-vs-shake-shaq-2026-s1-r10"
         assert round_label_from_slug(slug) == "Round 10"
 
     def test_semi_finals(self):
-        slug = "shake-shaq-vs-leteam-2025-s4-semi-finals"
+        slug = "shake-shaq-vs-shake-shaq-2025-s4-semi-finals"
         assert round_label_from_slug(slug) == "Semi Finals"
 
     def test_grand_final(self):
-        slug = "untouchaballs-vs-leteam-2026-s1-grand-final"
+        slug = "untouchaballs-vs-shake-shaq-2026-s1-grand-final"
         assert round_label_from_slug(slug) == "Grand Final"
 
     def test_unrecognized_slug_returns_none(self):
@@ -104,7 +104,7 @@ class TestFetchGamesSsbApi:
                 start=datetime(2026, 1, 15, 21, 10, tzinfo=SYDNEY),
                 end=datetime(2026, 1, 15, 22, 10, tzinfo=SYDNEY),
                 venue="Arncliffe Youth Centre #1",
-                details_url="https://sydneysocialbasketball.com.au/match/leteam-vs-baby-dragons-2025-s4-r1/",
+                details_url="https://sydneysocialbasketball.com.au/match/shake-shaq-vs-baby-dragons-2025-s4-r1/",
             )
         ]
 
@@ -113,8 +113,8 @@ class TestFetchGamesSsbApi:
         the HTML source decodes them, so the API source must too or the two
         sources produce different event titles."""
         match = _match(
-            531003, "leteam-vs-40s-shorties-2025-s4-r4",
-            519104, "LeTeam 2025 s4", 519300, "40s &amp; Shorties 2025 s4", TS_R1,
+            531003, "shake-shaq-vs-40s-shorties-2025-s4-r4",
+            519104, "Shake Shaq 2025 s4", 519300, "40s &amp; Shorties 2025 s4", TS_R1,
         )
         match["acf"]["venue"] = {"post_title": "Court &amp; Hall #2"}
         client = self._client([TEAM_POST], [[match]])
@@ -127,7 +127,7 @@ class TestFetchGamesSsbApi:
         fetch_games_ssb_api(client, CONFIG)
         first_call = client.get_json.call_args_list[0]
         assert first_call.args[0].endswith("/wp-json/wp/v2/team")
-        assert first_call.kwargs["params"] == {"slug": "leteam-12"}
+        assert first_call.kwargs["params"] == {"slug": "shake-shaq-12"}
 
     def test_filters_out_other_teams_matches(self):
         client = self._client([TEAM_POST], [[OUR_MATCH, OTHER_MATCH]])
@@ -137,7 +137,7 @@ class TestFetchGamesSsbApi:
 
     def test_raises_when_team_not_found(self):
         client = self._client([], [])
-        with pytest.raises(ScrapeError, match="leteam-12"):
+        with pytest.raises(ScrapeError, match="shake-shaq-12"):
             fetch_games_ssb_api(client, CONFIG)
 
     def test_raises_when_no_games_after_filtering(self):
@@ -162,8 +162,8 @@ class TestFetchGamesSsbApi:
 
     def test_match_with_falsy_time_is_skipped(self):
         tbd = _match(
-            531003, "leteam-vs-someone-2025-s4-r2",
-            519104, "LeTeam 2025 s4", 519300, "Someone 2025 s4", 0,
+            531003, "shake-shaq-vs-someone-2025-s4-r2",
+            519104, "Shake Shaq 2025 s4", 519300, "Someone 2025 s4", 0,
         )
         client = self._client([TEAM_POST], [[tbd, OUR_MATCH]])
         games = fetch_games_ssb_api(client, CONFIG)
