@@ -18,7 +18,9 @@ on:
           - DEBUG
 
   schedule:
-    - cron: '0 20 * * *' # 6am AEST (UTC+10)
+    - cron: '0 6 * * *' # 6am AEST (UTC+10)
+      timezone: "Australia/Sydney"
+      
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
