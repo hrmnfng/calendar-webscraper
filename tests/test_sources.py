@@ -108,6 +108,20 @@ class TestFetchGamesSsbApi:
             )
         ]
 
+    def test_html_entities_in_titles_are_unescaped(self):
+        """post_title values contain HTML entities (e.g. '&#038;' / '&amp;');
+        the HTML source decodes them, so the API source must too or the two
+        sources produce different event titles."""
+        match = _match(
+            531003, "leteam-vs-40s-shorties-2025-s4-r4",
+            519104, "LeTeam 2025 s4", 519300, "40s &amp; Shorties 2025 s4", TS_R1,
+        )
+        match["acf"]["venue"] = {"post_title": "Court &amp; Hall #2"}
+        client = self._client([TEAM_POST], [[match]])
+        games = fetch_games_ssb_api(client, CONFIG)
+        assert games[0].title == "Round 4: 40s & Shorties 2025 s4"
+        assert games[0].venue == "Court & Hall #2"
+
     def test_team_endpoint_called_with_slug_from_config_url(self):
         client = self._client([TEAM_POST], [[OUR_MATCH]])
         fetch_games_ssb_api(client, CONFIG)

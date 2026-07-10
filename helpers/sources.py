@@ -127,7 +127,11 @@ def fetch_games_ssb_api(client: ScraperClient, config: CalendarConfig) -> list[G
             home, away = acf["home_team"], acf["away_team"]
             if team_id not in (home["ID"], away["ID"]):
                 continue
-            opponent = away["post_title"] if home["ID"] == team_id else home["post_title"]
+            # post_title values carry HTML entities ("&amp;"); the HTML source
+            # decodes them, so unescape here to keep titles identical.
+            opponent = html.unescape(
+                away["post_title"] if home["ID"] == team_id else home["post_title"]
+            )
             round_label = round_label_from_slug(match["slug"]) or match["slug"]
             # acf.time is Sydney wall-clock encoded as a UTC epoch: decode as UTC,
             # keep the wall-clock digits, and re-label the zone as Sydney.
@@ -147,7 +151,7 @@ def fetch_games_ssb_api(client: ScraperClient, config: CalendarConfig) -> list[G
                     title=f"{round_label}: {opponent}",
                     start=start,
                     end=start + GAME_DURATION,
-                    venue=acf["venue"]["post_title"],
+                    venue=html.unescape(acf["venue"]["post_title"]),
                     details_url=match["link"],
                 )
             )
