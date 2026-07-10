@@ -98,8 +98,55 @@ def build_summary(results: list[RolloverResult]) -> str:
         "| --- | --- | --- |",
     ]
     for result in results:
-        lines.append(
-            f"| `{result.config_file}` | {result.status} | {result.detail} |"
-        )
+        detail = result.detail.replace("|", "\\|")
+        lines.append(f"| `{result.config_file}` | {result.status} | {detail} |")
     lines.append("")
     return "\n".join(lines)
+
+
+def check_config_rollover(client: ScraperClient, config_path: Path) -> RolloverResult:
+    """
+    Check one config file against the site; rewrite its ``url:`` line if a
+    newer season post exists for the team.
+    """
+    raw = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    url = (raw or {}).get("url", "")
+    if not url:
+        return RolloverResult(config_path.name, "skipped", "no url field")
+
+    api_base = _wp_api_base(url)
+    slug = _team_slug(url)
+
+    current_posts = client.get_json(f"{api_base}/team", params={"slug": slug})
+    if not current_posts:
+        return RolloverResult(
+            config_path.name, "skipped", f"slug {slug!r} not found on site"
+        )
+
+    current_title = html.unescape(current_posts[0]["title"]["rendered"])
+    base_name = base_team_name(current_title)
+    if base_name is None:
+        return RolloverResult(
+            config_path.name,
+            "skipped",
+            f"no season suffix in title {current_title!r}",
+        )
+
+    posts = _get_all_pages(client, f"{api_base}/team", params={"search": base_name})
+    newest = find_newest_team_post(posts, base_name)
+    if newest is None:
+        return RolloverResult(
+            config_path.name, "skipped", f"no posts match {base_name!r}"
+        )
+
+    if newest["slug"] == slug:
+        return RolloverResult(config_path.name, "unchanged", f"already on {slug!r}")
+
+    new_url = url.rstrip("/").rsplit("/", 1)[0] + f"/{newest['slug']}/"
+    rewrite_config_url(config_path, new_url)
+    newest_title = html.unescape(newest["title"]["rendered"])
+    return RolloverResult(
+        config_path.name,
+        "updated",
+        f"{slug} → {newest['slug']} ({newest_title!r})",
+    )
