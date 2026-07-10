@@ -15,6 +15,8 @@ from typing import Iterator
 import yaml
 from loguru import logger
 
+VALID_SOURCES = ("ssb-api", "ssb-html")
+
 
 @dataclass
 class CalendarConfig:
@@ -23,6 +25,7 @@ class CalendarConfig:
     name: str
     url: str
     color_id: int
+    source: str = "ssb-api"
 
     def __post_init__(self) -> None:
         if not self.name:
@@ -33,6 +36,11 @@ class CalendarConfig:
             raise ValueError(
                 f"Calendar config 'color_id' must be an integer between 1 and 11, "
                 f"got {self.color_id!r}"
+            )
+        if self.source not in VALID_SOURCES:
+            raise ValueError(
+                f"Calendar config 'source' must be one of {VALID_SOURCES}, "
+                f"got {self.source!r}"
             )
 
 
@@ -93,6 +101,7 @@ def _iter_configs(config_dir: str) -> Iterator[CalendarConfig]:
                 name=raw.get("name", ""),
                 url=raw.get("url", ""),
                 color_id=int(raw.get("color_id", 0)),
+                source=raw.get("source", "ssb-api"),
             )
         except (ValueError, TypeError) as exc:
             logger.warning(f"Skipping {filename}: {exc}")

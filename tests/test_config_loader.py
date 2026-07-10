@@ -116,6 +116,33 @@ class TestLoadConfigsFileFiltering:
 
 
 # ---------------------------------------------------------------------------
+# CalendarConfig — source field
+# ---------------------------------------------------------------------------
+
+class TestSourceField:
+    def test_source_defaults_to_ssb_api(self):
+        config = CalendarConfig(name="T", url="https://x/team/t/", color_id=5)
+        assert config.source == "ssb-api"
+
+    def test_explicit_source_accepted(self):
+        config = CalendarConfig(
+            name="T", url="https://x/team/t/", color_id=5, source="ssb-html"
+        )
+        assert config.source == "ssb-html"
+
+    def test_unknown_source_rejected(self):
+        with pytest.raises(ValueError, match="source"):
+            CalendarConfig(
+                name="T", url="https://x/team/t/", color_id=5, source="magic"
+            )
+
+    def test_source_read_from_yaml(self, tmp_path):
+        _write_yaml(str(tmp_path), "config-t.yaml", {**VALID_CONFIG, "source": "ssb-html"})
+        configs = load_configs(str(tmp_path))
+        assert configs[0].source == "ssb-html"
+
+
+# ---------------------------------------------------------------------------
 # load_configs — malformed files skipped gracefully
 # ---------------------------------------------------------------------------
 

@@ -106,10 +106,38 @@ class TestPatchEvent:
 
 
 class TestListEvents:
-    def test_returns_events_dict(self, gclient):
+    def test_returns_events_list(self, gclient):
         fake = {"items": [{"id": "e1"}]}
         gclient.service.events().list().execute.return_value = fake
-        assert gclient.list_events("cal-1") == fake
+        assert gclient.list_events("cal-1") == [{"id": "e1"}]
+
+
+class TestListEventsPagination:
+
+    def _client_with_pages(self, pages):
+        """Build a GoogleCalClient with a stubbed events().list() chain."""
+        client = object.__new__(GoogleCalClient)  # skip __init__ (no creds)
+        service = MagicMock()
+        executes = [
+            {"items": items, **({"nextPageToken": tok} if tok else {})}
+            for items, tok in pages
+        ]
+        service.events.return_value.list.return_value.execute.side_effect = executes
+        client.service = service
+        return client, service
+
+    def test_single_page_returns_items_list(self):
+        client, _ = self._client_with_pages([([{"id": "a"}], None)])
+        assert client.list_events(calendar_id="cal") == [{"id": "a"}]
+
+    def test_follows_next_page_token(self):
+        client, service = self._client_with_pages(
+            [([{"id": "a"}], "tok1"), ([{"id": "b"}], None)]
+        )
+        events = client.list_events(calendar_id="cal")
+        assert [e["id"] for e in events] == ["a", "b"]
+        second_call = service.events.return_value.list.call_args_list[1]
+        assert second_call.kwargs["pageToken"] == "tok1"
 
 
 class TestGetEventDetails:

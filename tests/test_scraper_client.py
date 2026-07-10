@@ -157,3 +157,58 @@ class TestInit:
 
     def test_session_created(self):
         assert ScraperClient("Bot")._session is not None
+
+
+# ---------------------------------------------------------------------------
+# User-Agent
+# ---------------------------------------------------------------------------
+
+class TestUserAgent:
+
+    def test_session_has_custom_user_agent(self):
+        scraper = ScraperClient("Bot")
+        ua = scraper._session.headers["User-Agent"]
+        assert ua.startswith("calendar-webscraper/")
+        assert "python-requests" not in ua
+
+    def test_requests_send_the_user_agent(self, scraper, requests_mock):
+        requests_mock.get(DUMMY_URL, text=DUMMY_HTML)
+        scraper.get_html(DUMMY_URL)
+        assert requests_mock.last_request.headers["User-Agent"].startswith(
+            "calendar-webscraper/"
+        )
+
+
+# ---------------------------------------------------------------------------
+# get_json
+# ---------------------------------------------------------------------------
+
+class TestGetJson:
+
+    def test_returns_parsed_json(self, scraper, requests_mock):
+        requests_mock.get(DUMMY_URL, json=[{"id": 1}])
+        assert scraper.get_json(DUMMY_URL) == [{"id": 1}]
+
+    def test_passes_query_params(self, scraper, requests_mock):
+        requests_mock.get(DUMMY_URL, json=[])
+        scraper.get_json(DUMMY_URL, params={"slug": "leteam-12"})
+        assert requests_mock.last_request.qs == {"slug": ["leteam-12"]}
+
+    def test_uses_configured_timeout(self, scraper, requests_mock):
+        requests_mock.get(DUMMY_URL, json=[])
+        with patch.object(scraper._session, "get", wraps=scraper._session.get) as mock_get:
+            scraper.get_json(DUMMY_URL)
+            _, kwargs = mock_get.call_args
+            assert kwargs.get("timeout") == 5
+
+    def test_retries_on_503(self, scraper, requests_mock):
+        requests_mock.get(DUMMY_URL, status_code=503)
+        with pytest.raises(requests.HTTPError):
+            scraper.get_json(DUMMY_URL)
+        assert requests_mock.call_count == 3
+
+    def test_raises_immediately_on_404(self, scraper, requests_mock):
+        requests_mock.get(DUMMY_URL, status_code=404)
+        with pytest.raises(requests.HTTPError):
+            scraper.get_json(DUMMY_URL)
+        assert requests_mock.call_count == 1

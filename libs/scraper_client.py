@@ -53,6 +53,7 @@ class ScraperClient:
         self.name = name
         self.default_timeout = default_timeout
         self._session = requests.Session()
+        self._session.headers["User-Agent"] = f"calendar-webscraper/1.0 ({name})"
         logger.debug(f"Created scraper client '{name}' (timeout={default_timeout}s)")
 
     def get_html(self, address: str) -> str:
@@ -95,6 +96,34 @@ class ScraperClient:
         response = self._session.get(address, timeout=self.default_timeout)
         response.raise_for_status()
         return response.text
+
+    def get_json(self, address: str, params: dict | None = None) -> list | dict:
+        """
+        Fetch and parse JSON from *address*, retrying on the same transient
+        errors as :meth:`get_html`.
+
+        Args:
+            address: URL to fetch.
+            params: Optional query parameters.
+
+        Returns:
+            The parsed JSON body (list or dict).
+        """
+        return self._get_json_with_retry(address, params)
+
+    @retry(
+        retry=retry_if_exception(_is_retryable),
+        stop=stop_after_attempt(_MAX_ATTEMPTS),
+        wait=wait_exponential(multiplier=1, min=_WAIT_MIN_SECONDS, max=_WAIT_MAX_SECONDS),
+        before_sleep=before_sleep_log(logging.getLogger(__name__), logging.WARNING),
+        reraise=True,
+    )
+    def _get_json_with_retry(self, address: str, params: dict | None) -> list | dict:
+        """Internal method that tenacity decorates for retry logic."""
+        logger.debug(f"Fetching JSON from '{address}' (params={params})")
+        response = self._session.get(address, params=params, timeout=self.default_timeout)
+        response.raise_for_status()
+        return response.json()
 
     def scrape_events(self, html_content: str, parse_type: str) -> list[dict]:
         """

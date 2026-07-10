@@ -1,9 +1,10 @@
 """
 Main entry point for the calendar-webscraper pipeline.
 
-Reads all active ``calendar-configs/config-*.yaml`` files, scrapes the
-corresponding basketball schedule pages, and syncs the results into Google
-Calendar (creating new events, patching reschedules, and updating stale fields).
+Reads all active ``calendar-configs/config-*.yaml`` files, fetches the
+corresponding basketball schedule pages (WordPress API with HTML fallback),
+and syncs the results into Google Calendar (creating new events, patching
+reschedules, and updating stale fields).
 """
 
 from __future__ import annotations
@@ -17,13 +18,14 @@ from loguru import logger
 from helpers.ascii_strings import IMPORTANT_STUFF_1, IMPORTANT_STUFF_2, IMPORTANT_STUFF_3
 from helpers.config_loader import CalendarConfig, load_configs
 from helpers.event_sync import (
-    apply_field_patches,
-    build_patch_payload,
-    determine_sync_action,
+    build_field_patch,
+    build_reschedule_patch,
     filter_events_by_schedule,
-    get_game_details,
-    simplify_existing_events,
+    match_game_to_event,
+    parse_existing_events,
 )
+from helpers.models import Game
+from helpers.sources import fetch_games
 from libs.google_cal_client import GoogleCalClient
 from libs.scraper_client import ScraperClient
 
@@ -82,18 +84,17 @@ def sync_calendar(
     config: CalendarConfig,
 ) -> None:
     """
-    Scrape the schedule for *config* and sync results into Google Calendar.
+    Fetch the schedule for *config* and sync it into Google Calendar.
 
-    For each scraped game one of three actions is taken:
+    Games are matched to existing events by their stable ``gameKey``
+    (extended property); legacy keyless events are matched by start time
+    once and adopt a key via the field patch. For each game:
 
-    * **exact match** — event already exists at the correct time; individual
-      fields (name, color, description, location) are patched if they have drifted.
-    * **reschedule** — event exists on the same date but at a different time;
-      the existing event is patched with the new time and details.
-    * **create** — no matching event found; a new event is inserted.
+    * **exact** — event exists at the right time; drifted fields are patched.
+    * **reschedule** — event exists but the time changed; fully re-patched.
+    * **create** — no matching event; a new one is inserted.
     """
-    html_content = scraper.get_html(config.url)
-    game_data = scraper.scrape_events(html_content=html_content, parse_type="ssb")
+    games = fetch_games(scraper, config)
 
     logger.log("MAJOR", IMPORTANT_STUFF_1)
     calendar_id = get_or_create_calendar(gclient, config.name, config.url)
@@ -101,58 +102,38 @@ def sync_calendar(
     logger.log("MAJOR", IMPORTANT_STUFF_2)
     all_events = gclient.list_events(calendar_id=calendar_id)
     schedule_events = filter_events_by_schedule(all_events, config.url)
+    existing = parse_existing_events(schedule_events)
 
-    if not schedule_events:
-        logger.debug("Calendar is empty — inserting all scraped games")
-        for game in game_data:
-            round_name, tip_off, finish, venue, details_url = get_game_details(game)
-            _create_event(
-                gclient, calendar_id, round_name, tip_off, finish,
-                venue, config.url, config.color_id,
-            )
-        logger.success(f"Finished syncing '{config.name}'")
-        return
-
-    logger.debug("Calendar not empty — diffing scraped games against existing events")
-    events_simple = simplify_existing_events(schedule_events)
-
-    for game in game_data:
-        round_name, tip_off, finish, venue, details_url = get_game_details(game)
-        action, event_id = determine_sync_action(tip_off, config.url, events_simple)
+    for game in games:
+        action, matched = match_game_to_event(game, existing)
+        if matched is not None:
+            existing.remove(matched)  # an event can only be matched once per run
 
         if action == "exact":
-            logger.info(f"[{round_name}] already exists — checking for stale fields...")
+            logger.info(f"[{game.title}] already exists — checking for stale fields...")
             event_details = gclient.get_event_details(
-                calendar_id=calendar_id, event_id=event_id
+                calendar_id=calendar_id, event_id=matched.id
             )
-            apply_field_patches(
-                gclient=gclient,
-                calendar_id=calendar_id,
-                event_id=event_id,
-                event_details=event_details,
-                round_name=round_name,
-                color_id=config.color_id,
-                details_url=details_url,
-                venue=venue,
-            )
+            patch = build_field_patch(event_details, game, config.color_id)
+            if patch:
+                gclient.patch_event(
+                    calendar_id=calendar_id, event_id=matched.id, patched_fields=patch
+                )
+                logger.info(f"\tPatched {sorted(patch)} for [{game.title}]")
 
         elif action == "reschedule":
-            logger.info(f"[{round_name}] has been rescheduled — patching time...")
-            patch = build_patch_payload(
-                round_name, tip_off, finish, config.color_id, details_url
-            )
+            logger.info(f"[{game.title}] has been rescheduled — patching...")
+            patch = build_reschedule_patch(game, config.color_id)
             gclient.patch_event(
-                calendar_id=calendar_id, event_id=event_id, patched_fields=patch
+                calendar_id=calendar_id, event_id=matched.id, patched_fields=patch
             )
             logger.info(
-                f"\tEvent [{round_name}] updated to [{tip_off}] - id [{event_id}]"
+                f"\tEvent [{game.title}] updated to [{game.start.isoformat()}] "
+                f"- id [{matched.id}]"
             )
 
         else:  # "create"
-            _create_event(
-                gclient, calendar_id, round_name, tip_off, finish,
-                venue, config.url, config.color_id, details_url,
-            )
+            _create_event(gclient, calendar_id, game, config)
 
     logger.success(f"Finished syncing '{config.name}'")
 
@@ -160,27 +141,22 @@ def sync_calendar(
 def _create_event(
     gclient: GoogleCalClient,
     calendar_id: str,
-    round_name: str,
-    tip_off: str,
-    finish: str,
-    venue: str,
-    schedule_url: str,
-    color_id: int,
-    description: str = "",
+    game: Game,
+    config: CalendarConfig,
 ) -> None:
     """Insert a new Google Calendar event and log the result."""
-    logger.info(f"[{round_name}] is a new event — creating...")
+    logger.info(f"[{game.title}] is a new event — creating...")
     event_id = gclient.create_event(
         calendar_id=calendar_id,
-        event_name=round_name,
-        start_time=tip_off,
-        end_time=finish,
-        location=venue,
-        private_properties={"schedule": schedule_url},
-        color_id=color_id,
-        description=description,
+        event_name=game.title,
+        start_time=game.start.isoformat(),
+        end_time=game.end.isoformat(),
+        location=game.venue,
+        private_properties={"schedule": config.url, "gameKey": game.key},
+        color_id=config.color_id,
+        description=game.details_url,
     )
-    logger.success(f"\tEvent [{event_id}] created for [{round_name}]")
+    logger.success(f"\tEvent [{event_id}] created for [{game.title}]")
 
 
 def main() -> None:
@@ -201,13 +177,21 @@ def main() -> None:
 
     configs = load_configs(CONFIG_DIR)
 
+    failures: list[str] = []
     for config in configs:
         try:
             sync_calendar(gclient=gclient, scraper=scraper, config=config)
         except Exception:
             logger.exception(f"Failed to sync calendar '{config.name}'")
+            failures.append(config.name)
 
     logger.log("MAJOR", IMPORTANT_STUFF_3)
+
+    if failures:
+        logger.error(
+            f"{len(failures)}/{len(configs)} calendar(s) failed to sync: {failures}"
+        )
+        sys.exit(1)
 
 
 if __name__ == "__main__":

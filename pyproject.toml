@@ -18,6 +18,7 @@ dependencies = [
     "pyyaml>=6.0",
     "python-dotenv>=1.0",
     "tenacity>=8.0",
+    "tzdata>=2024.1",
 ]
 
 [project.scripts]

@@ -109,6 +109,9 @@ class TestParseSsbContentHappyPath:
     def test_details_url(self):
         assert self.result[0]["details_url"] == "https://ssb.com/score/42"
 
+    def test_game_includes_round_label(self):
+        assert self.result[0]["round_label"] == "Round 7"
+
     def test_multiple_games_returns_correct_count(self):
         html = _make_page(
             _make_game_html(round_num="1", date="01/08/2025"),

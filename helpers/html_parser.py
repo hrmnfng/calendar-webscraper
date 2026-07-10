@@ -219,6 +219,7 @@ def _parse_ssb_game_element(element: Tag) -> dict | None:
 
     return {
         "round": f"{game_round}: {opponent}",
+        "round_label": game_round,
         "start": game_start,
         "end": game_end,
         "location": location,
