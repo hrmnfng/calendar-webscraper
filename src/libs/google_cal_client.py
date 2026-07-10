@@ -79,6 +79,30 @@ class GoogleCalClient:
         ).execute()
         return response.get("id")
 
+    def ensure_calendar_public(self, calendar_id: str) -> None:
+        """
+        Make the calendar publicly readable if it isn't already.
+
+        Inserts an ACL rule with the ``default`` scope and ``reader`` role —
+        the exact grant the Google Calendar UI's "Make available to public"
+        toggle creates. A ``freeBusyReader`` default rule does not count:
+        event details must be visible for the shared links to be useful.
+        Idempotent; safe to call on every sync run.
+        """
+        rules = self.service.acl().list(calendarId=calendar_id).execute()
+        for rule in rules.get("items", []):
+            if (
+                rule.get("scope", {}).get("type") == "default"
+                and rule.get("role") == "reader"
+            ):
+                logger.debug(f"Calendar [{calendar_id}] is already public")
+                return
+        self.service.acl().insert(
+            calendarId=calendar_id,
+            body={"role": "reader", "scope": {"type": "default"}},
+        ).execute()
+        logger.info(f"Calendar [{calendar_id}] made publicly readable")
+
     def create_event(
         self,
         event_name: str,

@@ -145,3 +145,39 @@ class TestGetEventDetails:
         fake = {"id": "e1", "summary": "Round 1"}
         gclient.service.events().get().execute.return_value = fake
         assert gclient.get_event_details("e1", "cal-1") == fake
+
+
+class TestEnsureCalendarPublic:
+    def _client_with_acl(self, items):
+        """Build a GoogleCalClient with a stubbed acl() chain."""
+        client = object.__new__(GoogleCalClient)  # skip __init__ (no creds)
+        service = MagicMock()
+        service.acl.return_value.list.return_value.execute.return_value = {
+            "items": items
+        }
+        client.service = service
+        return client, service
+
+    def test_inserts_default_reader_rule_when_not_public(self):
+        client, service = self._client_with_acl(
+            [{"role": "owner", "scope": {"type": "user", "value": "me@example.com"}}]
+        )
+        client.ensure_calendar_public("cal-1")
+        service.acl.return_value.insert.assert_called_once_with(
+            calendarId="cal-1",
+            body={"role": "reader", "scope": {"type": "default"}},
+        )
+
+    def test_noop_when_already_public(self):
+        client, service = self._client_with_acl(
+            [{"role": "reader", "scope": {"type": "default"}}]
+        )
+        client.ensure_calendar_public("cal-1")
+        service.acl.return_value.insert.assert_not_called()
+
+    def test_freebusy_only_rule_does_not_count_as_public(self):
+        client, service = self._client_with_acl(
+            [{"role": "freeBusyReader", "scope": {"type": "default"}}]
+        )
+        client.ensure_calendar_public("cal-1")
+        service.acl.return_value.insert.assert_called_once()
