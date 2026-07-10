@@ -1,9 +1,9 @@
 """
 Season-rollover detection for calendar configs.
 
-Each SSB team gets a new WordPress team post every season (slug ``leteam-12``
-→ ``leteam-14``); preseason and grading posts also appear as their own team
-posts and count as newer versions. These helpers detect when a config's team
+Each SSB team gets a new WordPress team post every season (slug
+``shake-shaq-17`` → ``shake-shaq-19``); preseason and grading posts also
+appear as their own team posts and count as newer versions. These helpers detect when a config's team
 URL points at an outdated post and rewrite the config file in place.
 
 Pure logic lives here; ``src/check_rollover.py`` is the CLI entry point.
@@ -23,8 +23,8 @@ import yaml
 from helpers.sources import _get_all_pages, _team_slug, _wp_api_base
 from libs.scraper_client import ScraperClient
 
-# Matches season suffixes: "LeTeam 2025 s4", "LeTeam 2026 s1 preseason",
-# "LeTeam 2023 s3 grading" — everything from " <year> s<N>" onward.
+# Matches season suffixes: "Shake Shaq 2025 s4", "Shake Shaq 2026 s1 preseason",
+# "Shake Shaq 2023 s3 grading" — everything from " <year> s<N>" onward.
 _SEASON_SUFFIX = re.compile(r"\s+\d{4}\s+s\d+\b.*$", re.IGNORECASE)
 
 
@@ -41,10 +41,10 @@ def base_team_name(title: str) -> str | None:
     """
     Strip the season suffix from a team post title.
 
-    ``"LeTeam 2025 s4"`` → ``"LeTeam"``; ``"LeTeam 2026 s1 preseason"`` →
-    ``"LeTeam"``. Returns ``None`` when the title has no recognizable season
-    suffix (nothing was stripped), since a prefix search on it would be
-    meaningless.
+    ``"Shake Shaq 2025 s4"`` → ``"Shake Shaq"``; ``"Shake Shaq 2026 s1
+    preseason"`` → ``"Shake Shaq"``. Returns ``None`` when the title has no
+    recognizable season suffix (nothing was stripped), since a prefix search
+    on it would be meaningless.
     """
     unescaped = html.unescape(title).strip()
     stripped = _SEASON_SUFFIX.sub("", unescaped).strip()
@@ -58,9 +58,9 @@ def find_newest_team_post(posts: list[dict], base_name: str) -> dict | None:
     Return the newest (by post ``date``) team post whose unescaped title
     starts with ``"<base_name> "``.
 
-    Prefix matching excludes fuzzy WP-search hits like "The LeTeam ..." when
-    looking for "LeTeam". Slugs are never compared for ordering — their
-    numbering is not clean (``leteam-8-2``, ``the-leteam``).
+    Prefix matching excludes fuzzy WP-search hits like "The Shake Shaq ..."
+    when looking for "Shake Shaq". Slugs are never compared for ordering —
+    their numbering is not clean (``shake-shaq-8-2``, ``shake-shaq-7-3``).
     """
     prefix = f"{base_name.lower()} "
     candidates = [
