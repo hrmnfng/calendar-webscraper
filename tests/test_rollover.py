@@ -64,6 +64,15 @@ class TestFindNewestTeamPost:
     def test_empty_returns_none(self):
         assert find_newest_team_post([], "Shake Shaq") is None
 
+    def test_exact_title_without_suffix_is_a_candidate(self):
+        # New season posts are sometimes published with no season suffix yet
+        # (e.g. shake-shaq-21 titled just "Shake Shaq").
+        posts = [
+            _post("shake-shaq-20", "Shake Shaq 2026 s2 preseason", "2026-07-07T10:07:42"),
+            _post("shake-shaq-21", "Shake Shaq", "2026-07-14T14:21:00"),
+        ]
+        assert find_newest_team_post(posts, "Shake Shaq")["slug"] == "shake-shaq-21"
+
     def test_name_with_ampersand_matches_prefix(self):
         posts = [
             _post("40s-shorties-9", "40s &amp; Shorties 2025 s4", "2025-12-12T11:19:04"),
@@ -125,6 +134,19 @@ class TestCheckConfigRollover:
         assert result.status == "updated"
         assert "shake-shaq-12" in result.detail and "shake-shaq-14" in result.detail
         assert "team/shake-shaq-14/" in path.read_text()
+
+    def test_updates_when_newest_post_has_no_season_suffix(self, tmp_path):
+        path = self._config(tmp_path)
+        client = self._client(
+            [_post("shake-shaq-12", "Shake Shaq 2025 s4", "2025-12-12T11:19:04")],
+            [[
+                _post("shake-shaq-12", "Shake Shaq 2025 s4", "2025-12-12T11:19:04"),
+                _post("shake-shaq-21", "Shake Shaq", "2026-07-14T14:21:00"),
+            ]],
+        )
+        result = check_config_rollover(client, path)
+        assert result.status == "updated"
+        assert "team/shake-shaq-21/" in path.read_text()
 
     def test_unchanged_when_already_newest(self, tmp_path):
         path = self._config(tmp_path)

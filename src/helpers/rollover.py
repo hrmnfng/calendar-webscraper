@@ -59,17 +59,19 @@ def find_newest_team_post(posts: list[dict], base_name: str) -> dict | None:
     starts with ``"<base_name> "``.
 
     Prefix matching excludes fuzzy WP-search hits like "The Shake Shaq ..."
-    when looking for "Shake Shaq". Slugs are never compared for ordering —
-    their numbering is not clean (``shake-shaq-8-2``, ``shake-shaq-7-3``).
+    when looking for "Shake Shaq". A title that is exactly the base name also
+    counts — new season posts are sometimes published before their season
+    suffix is added. Slugs are never compared for ordering — their numbering
+    is not clean (``shake-shaq-8-2``, ``shake-shaq-7-3``).
     """
-    prefix = f"{base_name.lower()} "
-    candidates = [
-        post
-        for post in posts
-        if html.unescape(post.get("title", {}).get("rendered", ""))
-        .lower()
-        .startswith(prefix)
-    ]
+    base = base_name.lower()
+    prefix = f"{base} "
+
+    def _matches(post: dict) -> bool:
+        title = html.unescape(post.get("title", {}).get("rendered", "")).lower().strip()
+        return title == base or title.startswith(prefix)
+
+    candidates = [post for post in posts if _matches(post)]
     if not candidates:
         return None
     return max(candidates, key=lambda post: post.get("date", ""))
