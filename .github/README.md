@@ -141,3 +141,9 @@ source: ssb-api           # Optional: "ssb-api" (default, JSON API with HTML fal
   opens (or refreshes) a single `chore/config-rollover` PR updating the
   affected `calendar-configs/*.yaml` URLs. Merge it to roll the calendar over
   to the new season; the calendar itself is reused, so subscribers keep working.
+
+All workflow action dependencies are pinned in
+[`workflows/actions.lock`](./workflows/actions.lock), including transitive
+dependencies. After changing an action reference, regenerate the lockfile with
+`gh actions-lock` (install the `github/gh-actions-lock` CLI extension if needed)
+and verify it with `gh actions-lock --verify`. Do not edit the lockfile by hand.
