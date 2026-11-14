@@ -7,12 +7,14 @@ credentials or network calls are made.
 
 from __future__ import annotations
 
+import json
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 with patch("libs.google_cal_client.build"), \
      patch("libs.google_cal_client.Credentials"):
+    from libs import google_cal_client
     from libs.google_cal_client import GoogleCalClient
 
 
@@ -38,6 +40,57 @@ class TestGetCalendarList:
         fake = {"items": [{"id": "cal1"}]}
         gclient.service.calendarList().list().execute.return_value = fake
         assert gclient.get_calendar_list() == fake
+
+
+class TestOAuthHelper:
+    def test_saves_required_credentials_to_repo_root(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        module_path = tmp_path / "src" / "libs" / "google_cal_client.py"
+        monkeypatch.setattr(google_cal_client, "__file__", str(module_path))
+
+        flow = MagicMock()
+        flow.run_local_server.return_value.client_id = "client-id"
+        flow.run_local_server.return_value.client_secret = "client-secret"
+        flow.run_local_server.return_value.refresh_token = "refresh-token"
+
+        with patch(
+            "google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file",
+            return_value=flow,
+        ) as from_client_secrets_file:
+            google_cal_client.main()
+
+        from_client_secrets_file.assert_called_once_with(
+            str(tmp_path / "credentials.json"), google_cal_client.SCOPES
+        )
+        token_path = tmp_path / "token.json"
+        assert json.loads(token_path.read_text(encoding="utf-8")) == {
+            "client_id": "client-id",
+            "client_secret": "client-secret",
+            "refresh_token": "refresh-token",
+        }
+        assert token_path.stat().st_mode & 0o777 == 0o600
+        output = capsys.readouterr().out
+        assert "credentials saved to token.json" in output
+        assert "client-secret" not in output
+        assert "refresh-token" not in output
+
+    def test_does_not_save_incomplete_credentials(self, tmp_path, monkeypatch):
+        module_path = tmp_path / "src" / "libs" / "google_cal_client.py"
+        monkeypatch.setattr(google_cal_client, "__file__", str(module_path))
+        flow = MagicMock()
+        flow.run_local_server.return_value.client_id = "client-id"
+        flow.run_local_server.return_value.client_secret = "client-secret"
+        flow.run_local_server.return_value.refresh_token = None
+
+        with patch(
+            "google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file",
+            return_value=flow,
+        ):
+            with pytest.raises(RuntimeError, match="required credentials"):
+                google_cal_client.main()
+
+        assert not (tmp_path / "token.json").exists()
 
 
 class TestInsertCalendar:
