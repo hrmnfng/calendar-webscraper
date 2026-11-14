@@ -8,7 +8,6 @@ import sys
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from loguru import logger
 
@@ -203,11 +202,39 @@ class GoogleCalClient:
         ).execute()
 
 
-# Running this module directly triggers the one-time OAuth flow used to
-# generate the refresh token that is stored as an environment variable.
-if __name__ == "__main__":
-    flow = InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)
+def main() -> None:
+    """Run the OAuth flow and save the authorized-user credentials locally."""
+    import json
+    from pathlib import Path
+
+    from google_auth_oauthlib.flow import InstalledAppFlow
+
+    repo_root = Path(__file__).resolve().parents[2]
+    client_secrets_path = repo_root / "credentials.json"
+    token_path = repo_root / "token.json"
+
+    flow = InstalledAppFlow.from_client_secrets_file(
+        str(client_secrets_path), SCOPES
+    )
     creds = flow.run_local_server(port=0)
-    print(f"Client ID:     {creds.client_id}")
-    print(f"Client Secret: {creds.client_secret}")
-    print(f"Refresh Token: {creds.refresh_token}")
+    if not creds.client_id or not creds.client_secret or not creds.refresh_token:
+        raise RuntimeError(
+            "OAuth flow did not return all required credentials; "
+            "re-authorize the app and run this helper again."
+        )
+
+    credentials = {
+        "client_id": creds.client_id,
+        "client_secret": creds.client_secret,
+        "refresh_token": creds.refresh_token,
+    }
+    token_path.write_text(
+        json.dumps(credentials, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    token_path.chmod(0o600)
+    print(f"OAuth flow completed; credentials saved to {token_path.name}.")
+
+
+if __name__ == "__main__":
+    main()

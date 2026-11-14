@@ -82,11 +82,14 @@ LOG_LEVEL=INFO
 3. Navigate to **APIs & Services → Credentials** and click **CREATE CREDENTIALS → OAuth Client ID**.
    - Application type: **Desktop app**
 4. Download the JSON file, rename it to `credentials.json`, and place it in the repository root.
-5. Run the auth helper to generate your refresh token:
+5. Run the auth helper to generate your refresh token. It saves the generated
+   credentials to `token.json` in the repository root; the file is ignored by
+   Git and the helper does not print the secrets:
    ```shell
    uv run python src/libs/google_cal_client.py
    ```
-6. Copy the printed `client_id`, `client_secret`, and `refresh_token` values into your `.env` file.
+6. Copy the `client_id`, `client_secret`, and `refresh_token` values from
+   `token.json` into your `.env` file.
 7. Delete `credentials.json` — it is no longer needed.
 
 > **Note:** Refresh tokens for projects with publishing status `Testing` expire after 7 days.
