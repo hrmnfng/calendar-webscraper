@@ -208,6 +208,5 @@ class GoogleCalClient:
 if __name__ == "__main__":
     flow = InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)
     creds = flow.run_local_server(port=0)
-    print(f"Client ID:     {creds.client_id}")
-    print(f"Client Secret: {creds.client_secret}")
-    print(f"Refresh Token: {creds.refresh_token}")
+    print("OAuth flow completed successfully.")
+    print("Credentials were obtained; do not print or log client secrets/tokens.")
